@@ -184,11 +184,14 @@
   .nh-clock{font-size:30px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
   .nh-status{font-size:15px;color:var(--muted);font-weight:600}
   .nh-status b{color:var(--accent)}
-  .now-grid{display:grid;grid-template-columns:2fr 1fr;grid-auto-rows:min-content;gap:16px;align-items:start}
+  .now-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
   @media(max-width:860px){.now-grid{grid-template-columns:1fr}}
+  .now-col{display:flex;flex-direction:column;gap:16px;min-width:0}
   .now-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
-  .now-panel.span{grid-row:span 2}
-  @media(max-width:860px){.now-panel.span{grid-row:auto}}
+  .nowcard{cursor:pointer;transition:filter .08s}
+  .nowcard:hover{filter:brightness(1.07)}
+  .now-panel .tile{cursor:pointer;transition:filter .08s}
+  .now-panel .tile:hover{filter:brightness(.97)}
   .now-panel h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:12px 15px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;margin:0}
   .now-panel h3 span{color:var(--ink);font-weight:800}
   .now-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:9px;padding:13px}
@@ -5084,7 +5087,9 @@ function renderMatrix(){
   document.querySelectorAll('th.rowhead').forEach(th=>th.onclick=()=>{toggleOnly(th.dataset.e);});
 }
 
-function toggleOnly(e){state.only.has(e)?state.only.delete(e):state.only.add(e);renderControls();renderMain();}
+function toggleOnly(e){state.only.has(e)?state.only.delete(e):state.only.add(e);syncOnlyDay();renderControls();renderMain();}
+/* Making a Show-only selection defaults to the weekly view; clearing returns to a day matrix. */
+function syncOnlyDay(){if(state.only.size)state.day='Week';else if(state.day==='Week')state.day=DAYS[0];}
 
 /* ---------- week view (full week per entity) ---------- */
 function renderWeek(){
@@ -5127,9 +5132,9 @@ function renderOnlyPanel(){
   const list=entities(state.view);
   p.innerHTML=`<div class="oh"><button data-a="all">Select all</button><button data-a="clear">Clear</button></div>
     <div class="only-list">${list.map(e=>`<label class="oitem"><input type="checkbox" data-o="${esc(e)}" ${state.only.has(e)?'checked':''}><span>${esc(e)}</span></label>`).join('')}</div>`;
-  p.querySelectorAll('[data-o]').forEach(cb=>cb.onchange=()=>{cb.checked?state.only.add(cb.dataset.o):state.only.delete(cb.dataset.o);renderControls();renderMain();});
-  p.querySelector('[data-a="all"]').onclick=()=>{list.forEach(e=>state.only.add(e));renderControls();renderMain();};
-  p.querySelector('[data-a="clear"]').onclick=()=>{state.only.clear();renderControls();renderMain();};
+  p.querySelectorAll('[data-o]').forEach(cb=>cb.onchange=()=>{cb.checked?state.only.add(cb.dataset.o):state.only.delete(cb.dataset.o);syncOnlyDay();renderControls();renderMain();});
+  p.querySelector('[data-a="all"]').onclick=()=>{list.forEach(e=>state.only.add(e));syncOnlyDay();renderControls();renderMain();};
+  p.querySelector('[data-a="clear"]').onclick=()=>{state.only.clear();syncOnlyDay();renderControls();renderMain();};
 }
 
 /* ---------- Find Open ---------- */
@@ -5307,55 +5312,92 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','
 let nowKey='';
 const TEACH_SLOTS=slots.filter(s=>TEACHING.test(s.label));
 function fmtT(m){const h=((Math.floor(m/60)+11)%12)+1;return h+':'+String(m%60).padStart(2,'0');}
-function fmtClock(d){const wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];let h=d.getHours();const ap=h<12?'AM':'PM';h=((h+11)%12)+1;const p=n=>String(n).padStart(2,'0');return `${wd} · ${h}:${p(d.getMinutes())}:${p(d.getSeconds())} ${ap}`;}
+function fmtClock(d){const wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];let h=d.getHours();const ap=h<12?'AM':'PM';h=((h+11)%12)+1;return `${wd} · ${h}:${String(d.getMinutes()).padStart(2,'0')} ${ap}`;}
 function nowDT(){const d=new Date();const gi=d.getDay();return{d,dayName:(gi>=1&&gi<=5)?DAYS[gi-1]:null,t:d.getHours()*60+d.getMinutes()};}
 function sessionsAt(day,t){return SESSIONS.filter(s=>s.day===day&&s.start!=null&&s.start<=t&&t<s.end);}
-function statusFor(dayName,t){
-  if(dayName){const inS=sessionsAt(dayName,t);if(inS.length)return{mode:'now',day:dayName,t,sessions:inS};}
+function nextPeriod(dayName,t){
   const order=d=>DAYS.indexOf(d),nowIdx=dayName?order(dayName):-1,seen=new Set(),uniq=[];
   TEACH_SLOTS.forEach(s=>{const k=s.day+'|'+s.start;if(!seen.has(k)){seen.add(k);uniq.push({day:s.day,di:order(s.day),start:s.start});}});
   uniq.sort((a,b)=>a.di-b.di||a.start-b.start);
   const nx=uniq.find(c=>c.di>nowIdx||(c.di===nowIdx&&c.start>t))||uniq[0];
-  return{mode:'next',day:nx.day,t:nx.start,sessions:sessionsAt(nx.day,nx.start)};
+  return{day:nx.day,t:nx.start,sessions:sessionsAt(nx.day,nx.start)};
 }
+function statusFor(dayName,t){
+  if(dayName){const inS=sessionsAt(dayName,t);if(inS.length)return{mode:'now',day:dayName,t,sessions:inS};}
+  const nx=nextPeriod(dayName,t);return{mode:'next',day:nx.day,t:nx.t,sessions:nx.sessions};
+}
+function periodMeta(day,t){
+  const cov=TEACH_SLOTS.filter(s=>s.day===day&&s.start<=t&&t<s.end);
+  return{label:[...new Set(cov.map(c=>c.label))].join(' / ')||'—',
+    time:cov.length?fmtT(Math.min(...cov.map(c=>c.start)))+'–'+fmtT(Math.max(...cov.map(c=>c.end))):'',
+    end:cov.length?Math.max(...cov.map(c=>c.end)):null};
+}
+function headSpanFor(st,now){
+  const ex=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  if(st.mode==='now'){const e=periodMeta(st.day,st.t).end;return Math.max(0,Math.ceil((e||ex)-ex))+' min left';}
+  if(st.day===nowDT().dayName && st.t>ex) return 'in '+Math.max(0,Math.ceil(st.t-ex))+' min';
+  return '—';
+}
+function openEntity(kind,key){
+  state.view=kind;state.only=new Set([key]);state.day='Week';state.filter='';
+  const fi=document.getElementById('filter');if(fi)fi.value='';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===kind));
+  renderControls();renderMain();window.scrollTo(0,0);
+}
+const _gi=g=>{const x=(g||[]).find(v=>GRADES.includes(v));return x?GRADES.indexOf(x):99;};
+function _sortS(arr){return arr.slice().sort((a,b)=>_gi(a.grades)-_gi(b.grades)||a.subject.localeCompare(b.subject));}
+function nowCard(s){const g=gradeStyle(s.grades),who=s.teachers.filter(x=>x!=='TBD').join(', '),rm=s.room?(' · '+s.room):'';
+  const tch=s.teachers.find(x=>x!=='TBD')||'';
+  return `<div class="nowcard" style="background:${g.bg}"${tch?` data-go-teacher="${esc(tch)}"`:''}><span class="s">${esc(s.subject)}</span><span class="m">${esc(who)}${rm}</span></div>`;}
 function renderNow(st){
   st=st||(()=>{const n=nowDT();return statusFor(n.dayName,n.t);})();
-  const {mode,day,t}=st;
-  const gi=g=>{const x=(g||[]).find(v=>GRADES.includes(v));return x?GRADES.indexOf(x):99;};
-  const inS=st.sessions.slice().sort((a,b)=>gi(a.grades)-gi(b.grades)||a.subject.localeCompare(b.subject));
-  const cards=inS.map(s=>{const g=gradeStyle(s.grades),who=s.teachers.filter(x=>x!=='TBD').join(', '),rm=s.room?(' · '+s.room):'';
-    return `<div class="nowcard" style="background:${g.bg}"><span class="s">${esc(s.subject)}</span><span class="m">${esc(who)}${rm}</span></div>`;}).join('')||'<div class="now-empty">No classes in session.</div>';
-  const busyR=new Set();inS.forEach(s=>atom(s.room).forEach(r=>busyR.add(r)));
+  const now=new Date(),{mode,day,t}=st;
+  const inS=mode==='now'?_sortS(st.sessions):[];
+  const nu=mode==='now'?nextPeriod(day,nowDT().t):{day:st.day,t:st.t,sessions:st.sessions};
+  const nuS=_sortS(nu.sessions),nuMeta=periodMeta(nu.day,nu.t);
+  const busyR=new Set();st.sessions.forEach(s=>atom(s.room).forEach(r=>busyR.add(r)));
   const openR=ATOMIC_ROOMS.filter(r=>!busyR.has(r));
-  const busyT=new Set();inS.forEach(s=>s.teachers.forEach(x=>busyT.add(x)));
+  const busyT=new Set();st.sessions.forEach(s=>s.teachers.forEach(x=>busyT.add(x)));
   const faculty=TEACHERS.filter(x=>FACULTY.has(x)),freeFac=faculty.filter(x=>!busyT.has(x));
-  const cov=TEACH_SLOTS.filter(s=>s.day===day&&s.start<=t&&t<s.end);
-  const plabel=[...new Set(cov.map(c=>c.label))].join(' / ')||'—';
-  const ptime=cov.length?(fmtT(Math.min(...cov.map(c=>c.start)))+'–'+fmtT(Math.max(...cov.map(c=>c.end)))):'';
-  const status=mode==='now'?`<b>In session</b> · ${esc(plabel)} · ${ptime}`
-    :`Nothing in session right now · <b>Up next:</b> ${day} · ${esc(plabel)} at ${fmtT(t)}`;
+  const meta=periodMeta(day,t);
+  const status=mode==='now'?`<b>In session</b> · ${esc(meta.label)} · ${meta.time}`
+    :`Nothing in session right now · <b>Up next:</b> ${day} · ${esc(meta.label)} at ${fmtT(t)}`;
+  const inCards=inS.length?inS.map(nowCard).join(''):'<div class="now-empty">No classes in session right now.</div>';
+  const nuCards=nuS.length?nuS.map(nowCard).join(''):'<div class="now-empty">—</div>';
+  const roomTiles=openR.map(r=>`<div class="tile r-open" data-go-room="${r}"><span class="tl-h">${r}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>';
+  const facTiles=freeFac.map(x=>`<div class="tile t-free" data-go-teacher="${esc(x)}"><span class="tl-h">${x}</span><span class="tl-s">Planning</span></div>`).join('')||'<div class="now-empty">All faculty teaching.</div>';
   document.getElementById('main').innerHTML=`
    <div class="now">
     <div class="now-hero"><div class="nh-clock" id="nowClock"></div><div class="nh-status">${status}</div></div>
     <div class="now-grid">
-      <section class="now-panel span"><h3>In session <span>${inS.length}</span></h3><div class="now-cards">${cards}</div></section>
-      <section class="now-panel"><h3>Open rooms <span>${openR.length} / ${ATOMIC_ROOMS.length}</span></h3><div class="tilegrid">${openR.map(r=>`<div class="tile r-open"><span class="tl-h">${r}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>'}</div></section>
-      <section class="now-panel"><h3>Faculty on planning <span>${freeFac.length} / ${faculty.length}</span></h3><div class="tilegrid">${freeFac.map(x=>`<div class="tile t-free"><span class="tl-h">${x}</span><span class="tl-s">Planning</span></div>`).join('')||'<div class="now-empty">All faculty teaching.</div>'}</div></section>
+      <div class="now-col">
+        <section class="now-panel"><h3>In session <span id="nowCount">${headSpanFor(st,now)}</span></h3><div class="now-cards">${inCards}</div></section>
+        <section class="now-panel"><h3>Next up <span>${nu.day} · ${esc(nuMeta.label)} · ${nuMeta.time}</span></h3><div class="now-cards">${nuCards}</div></section>
+      </div>
+      <div class="now-col">
+        <section class="now-panel"><h3>Open rooms <span>${openR.length} / ${ATOMIC_ROOMS.length}</span></h3><div class="tilegrid">${roomTiles}</div></section>
+        <section class="now-panel"><h3>Faculty on planning <span>${freeFac.length} / ${faculty.length}</span></h3><div class="tilegrid">${facTiles}</div></section>
+      </div>
     </div></div>`;
-  const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(new Date());
+  const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(now);
+  document.querySelectorAll('#main [data-go-teacher]').forEach(el=>el.onclick=()=>openEntity('teacher',el.dataset.goTeacher));
+  document.querySelectorAll('#main [data-go-room]').forEach(el=>el.onclick=()=>openEntity('room',el.dataset.goRoom));
   nowKey=mode+'|'+day+'|'+t;
 }
 function nowTick(){
-  const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(new Date());
-  const n=nowDT(),st=statusFor(n.dayName,n.t),key=st.mode+'|'+st.day+'|'+st.t;
-  if(state.view==='now'&&key!==nowKey)renderNow(st);
+  const now=new Date(),n=nowDT();
+  const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(now);
+  const st=statusFor(n.dayName,n.t),key=st.mode+'|'+st.day+'|'+st.t;
+  if(state.view!=='now')return;
+  if(key!==nowKey){renderNow(st);return;}
+  const span=document.getElementById('nowCount');if(span)span.textContent=headSpanFor(st,now);
 }
 function renderMain(){if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
 document.getElementById('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;
   state.view=b.dataset.view;state.only.clear();state.showPanel=false;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));renderControls();renderMain();};
 document.getElementById('filter').oninput=e=>{state.filter=e.target.value;renderControls();renderMain();};
-document.getElementById('clearF').onclick=()=>{state.filter='';state.only.clear();document.getElementById('filter').value='';renderControls();renderMain();};
+document.getElementById('clearF').onclick=()=>{state.filter='';state.only.clear();syncOnlyDay();document.getElementById('filter').value='';renderControls();renderMain();};
 document.getElementById('onlyBtn').onclick=()=>{state.showPanel=!state.showPanel;renderOnlyPanel();};
 document.addEventListener('click',e=>{if(!e.target.closest('.only-wrap')&&state.showPanel){state.showPanel=false;renderOnlyPanel();}});
 document.getElementById('printBtn').onclick=doBrowserPrint;
