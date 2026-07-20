@@ -1,0 +1,5270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Faculty Schedule Viewer</title>
+<style>
+  :root{
+    --bg:#eef1f5; --panel:#ffffff; --ink:#18212c; --muted:#63717f; --faint:#8b97a3;
+    --line:#dde3ea; --line2:#eaeef3; --accent:#1f5c99; --accent-soft:#e9f1f9;
+    --chip:#eef2f6; --shadow:0 1px 2px rgba(20,40,60,.05),0 6px 20px rgba(20,40,60,.06);
+    --r:12px;
+    --g7a:#2f9e8f; --g7b:#22486d; --gC7:#3f7cc0; --g8:#b07a2e; --g9:#4f8b3f;
+    --g10:#7b57a3; --g11:#c65f49; --g12:#3f4b64; --gmulti:#7d8b3a;
+    --plan:#cdd8c2; --plan-ink:#4a5a3c; --open:#f4f6f8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font:14px/1.42 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  h1,h2,h3{margin:0}
+  button{font:inherit;cursor:pointer}
+
+  .topbar{position:sticky;top:0;z-index:60;display:flex;align-items:center;gap:14px;
+    padding:11px 18px;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+  .brand{font-weight:800;font-size:16px;letter-spacing:-.2px;display:flex;align-items:center;gap:9px}
+  .ver{font-size:11px;color:var(--muted);font-weight:700;background:var(--chip);padding:2px 8px;border-radius:20px;user-select:none}
+  .tabs{display:flex;gap:3px;margin-left:8px;background:var(--chip);padding:3px;border-radius:11px}
+  .tab{border:0;background:transparent;color:var(--muted);padding:7px 15px;border-radius:8px;font-weight:650}
+  .tab:hover{color:var(--accent)}
+  .tab.active{background:var(--panel);color:var(--ink);box-shadow:var(--shadow)}
+  .spacer{flex:1}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 13px;border-radius:9px;font-weight:650}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.primary:hover{background:#17548e;color:#fff}
+
+  .controls{position:sticky;top:53px;z-index:50;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:11px 18px;background:var(--bg);border-bottom:1px solid var(--line2)}
+  .days{display:flex;gap:4px}
+  .day-pill{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:7px 14px;border-radius:9px;font-weight:700}
+  .day-pill:hover{border-color:var(--accent);color:var(--accent)}
+  .day-pill.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .sep{width:1px;height:26px;background:var(--line)}
+  .filter{position:relative}
+  .filter input{font:inherit;padding:8px 12px 8px 32px;border:1px solid var(--line);border-radius:9px;min-width:170px;background:var(--panel) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2363717f' stroke-width='2' viewBox='0 0 24 24'><circle cx='11' cy='11' r='7'/><path d='M21 21l-4-4'/></svg>") 9px center no-repeat}
+  .only-wrap{position:relative}
+  .only-btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:8px 12px;border-radius:9px;font-weight:650}
+  .only-btn.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  .only-panel{position:absolute;top:44px;left:0;z-index:70;background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);width:250px;max-height:340px;display:flex;flex-direction:column}
+  .only-panel .oh{display:flex;gap:6px;padding:9px;border-bottom:1px solid var(--line2)}
+  .only-panel .oh button{flex:1;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:5px;font-size:12px;color:var(--muted)}
+  .only-list{overflow:auto;padding:5px}
+  .oitem{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:7px;cursor:pointer}
+  .oitem:hover{background:var(--accent-soft)}
+  .oitem input{accent-color:var(--accent);width:15px;height:15px}
+  .count{font-size:12.5px;color:var(--muted)}
+  .link{background:none;border:0;color:var(--accent);font-weight:650;padding:0}
+  .legend{display:flex;flex-wrap:wrap;gap:5px 13px;padding:9px 18px 3px;align-items:center}
+  .lg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);font-weight:600}
+  .sw{width:15px;height:15px;border-radius:4px;display:inline-block}
+
+  .wrap{padding:12px 18px 40px}
+  .gridcard{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:auto;max-height:calc(100vh - 210px)}
+  table.grid{border-collapse:separate;border-spacing:0;width:100%;min-width:760px}
+  table.grid th,table.grid td{border-bottom:1px solid var(--line2);border-right:1px solid var(--line2)}
+  table.grid thead th{position:sticky;top:0;z-index:20;background:var(--panel);padding:9px 8px;text-align:center;font-weight:700}
+  .ph-lab{font-size:12.5px;color:var(--ink)}
+  .ph-time{font-size:10.5px;color:var(--faint);font-weight:600;margin-top:1px}
+  .ph-gg{font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 4px;margin-left:4px}
+  .blk{display:inline-block;font-size:9.5px;font-weight:800;background:var(--ink);color:#fff;border-radius:4px;padding:0 4px;margin-right:5px;vertical-align:1px}
+  th.corner{position:sticky;left:0;top:0;z-index:30;background:var(--panel);text-align:left;padding:9px 12px;min-width:150px;box-shadow:6px 0 8px -7px rgba(0,0,0,.18)}
+  th.rowhead{position:sticky;left:0;z-index:15;background:var(--panel);text-align:left;padding:7px 12px;min-width:150px;max-width:180px;cursor:pointer;box-shadow:6px 0 8px -7px rgba(0,0,0,.14)}
+  tbody tr:nth-child(even) th.rowhead{background:#fafbfd}
+  tbody tr:hover th.rowhead{background:var(--accent-soft)}
+  th.rowhead .rn{font-weight:750;font-size:14px}
+  th.rowhead .rm{font-size:10.5px;color:var(--faint);font-weight:600;margin-top:1px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  th.rowhead.pinned .rn::after{content:"●";color:var(--accent);font-size:9px;margin-left:6px;vertical-align:2px}
+  td.cell{padding:4px;vertical-align:top;height:52px}
+  .blkc{border-radius:8px;padding:6px 8px;height:100%;display:flex;flex-direction:column;justify-content:center;position:relative;min-height:44px}
+  .blkc .nm{font-weight:750;font-size:13.5px;line-height:1.15;letter-spacing:-.1px}
+  .blkc .sub2{font-size:10.5px;font-weight:600;opacity:.92;margin-top:2px}
+  .blkc .rm{position:absolute;right:7px;bottom:5px;font-size:9.5px;font-weight:600;opacity:.7}
+  .cls-w{color:#fff}
+  .cell.plan .blkc{background:var(--plan);color:var(--plan-ink)}
+  .cell.plan .nm{font-weight:650;font-style:italic;font-size:12.5px}
+  .cell.open .blkc{background:var(--open);border:1px dashed var(--line);color:var(--faint)}
+  .cell.open .nm{font-weight:600;font-style:italic;font-size:12px}
+  .cell.non .blkc{background:transparent;color:var(--faint)}
+  .cell.non .nm{font-weight:600;font-style:italic;font-size:12px}
+  .cell.void{background:repeating-linear-gradient(135deg,transparent,transparent 6px,#f5f7f9 6px,#f5f7f9 12px)}
+
+  .avail{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  .avail h2{font-size:16px;margin-bottom:3px;letter-spacing:-.2px}
+  .avail .desc{color:var(--muted);font-size:12.5px;margin-bottom:14px}
+  .fcontrols{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--ink);min-width:160px}
+  .result{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:720px){.result{grid-template-columns:1fr}}
+  .box{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  .box h3{font-size:13px;padding:10px 13px;background:var(--bg);border-bottom:1px solid var(--line2);display:flex;justify-content:space-between}
+  .box h3 .n{color:var(--muted);font-weight:700}
+  .grouplab{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--faint);padding:11px 13px 3px}
+  .taglist{display:flex;flex-wrap:wrap;gap:7px;padding:6px 13px 13px}
+  .tag{border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-weight:700;font-size:12.5px;background:#fbfcfd}
+  .tag.room{background:#e9f5ee;border-color:#c3e2ce;color:#1d6b3f}
+  .tag.adj{background:#fff;color:var(--muted);font-weight:600;border-style:dashed}
+  .empty{padding:14px;color:var(--muted);font-style:italic}
+  .mtable-wrap{overflow-x:auto;margin-top:8px}
+  .matrix{width:auto;border-collapse:collapse;font-size:12px}
+  .matrix th,.matrix td{border:1px solid var(--line2);padding:6px 10px;text-align:center;white-space:nowrap}
+  .matrix th{background:var(--bg);font-size:11px;color:var(--muted)}
+  .matrix td.yes{background:#e9f5ee;color:#1d6b3f;font-weight:800}
+  .matrix td.no{color:#c2ccd6}
+  .matrix td.lab{text-align:left;font-weight:700;background:var(--bg)}
+  .selrow{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0}
+  .selrow label{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;cursor:pointer}
+  .selrow input{accent-color:var(--accent)}
+
+
+  .hint{background:var(--panel);border:1px dashed var(--line);border-radius:var(--r);padding:34px;text-align:center;color:var(--muted)}
+  .day-pill.wk{margin-left:2px}
+
+  /* ---- Week view (full week per entity) ---- */
+  .wk-cards{display:flex;flex-wrap:wrap;gap:16px}
+  .wk-card{flex:1 1 660px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .wk-head{display:flex;align-items:baseline;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line2)}
+  .wk-name{font-size:17px;font-weight:800;letter-spacing:-.2px}
+  .wk-meta{font-size:12px;color:var(--muted)}
+  .wk-week{display:grid;grid-template-columns:repeat(5,1fr)}
+  .wk-daycol{border-right:1px solid var(--line2);min-width:0}
+  .wk-daycol:last-child{border-right:none}
+  .wk-dayh{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:center;padding:7px 4px;background:var(--bg);border-bottom:1px solid var(--line2)}
+  .wk-cell{padding:5px 6px;border-bottom:1px solid var(--line2)}
+  .wk-cell:last-child{border-bottom:none}
+  .wk-cell .wt{font-size:9.5px;color:var(--faint);font-weight:600;margin-bottom:3px}
+  .wk-cell .blkc{min-height:34px;border-radius:7px}
+  .wk-cell.plan .blkc{background:var(--plan);color:var(--plan-ink)}
+  .wk-cell.plan .nm{font-weight:650;font-style:italic;font-size:12px}
+  .wk-cell.open .blkc{background:var(--open);border:1px dashed var(--line);color:var(--faint)}
+  .wk-cell.open .nm{font-weight:600;font-style:italic;font-size:12px}
+  .wk-cell.void .blkc{background:repeating-linear-gradient(135deg,transparent,transparent 6px,#f5f7f9 6px,#f5f7f9 12px);min-height:22px}
+  @media(max-width:760px){.wk-card{flex:1 1 100%}.wk-week{min-width:680px}.wk-card{overflow-x:auto}}
+
+  /* ---- Find Open board ---- */
+  .fd-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .fd-days{display:flex;gap:4px}
+  .fd-day{border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:6px 13px;border-radius:8px;font-weight:700}
+  .fd-day:hover{border-color:var(--accent);color:var(--accent)}
+  .fd-day.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .fd-pers{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px}
+  .fd-per{display:flex;flex-direction:column;align-items:flex-start;border:1px solid var(--line);background:var(--panel);border-radius:9px;padding:6px 12px;min-width:98px;line-height:1.2}
+  .fd-per:hover{border-color:var(--accent)}
+  .fd-per b{font-size:12.5px}
+  .fd-per span{font-size:10px;color:var(--faint);font-weight:600}
+  .fd-per.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+  .fd-per.on b{color:var(--accent)}
+  .fd-summary{display:flex;gap:20px;align-items:baseline;flex-wrap:wrap;margin:18px 0 4px;padding-bottom:13px;border-bottom:1px solid var(--line2)}
+  .fd-when{font-size:18px;font-weight:800;letter-spacing:-.3px}
+  .fd-stat{font-size:13px;color:var(--muted)}
+  .fd-stat b{font-size:16px;color:var(--ink)}
+  .fd-section{margin-top:18px}
+  .fd-section h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px}
+  .tilegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:8px}
+  .tile{border-radius:11px;padding:9px 12px;min-height:60px;display:flex;flex-direction:column;justify-content:center;border:1px solid var(--line);background:var(--panel)}
+  .tile .tl-h{font-weight:800;font-size:15px;letter-spacing:-.2px}
+  .tile .tl-s{font-size:11px;font-weight:700;margin-top:2px}
+  .tile .tl-c{font-size:11px;font-weight:600;margin-top:2px;line-height:1.2}
+  .tile .tl-w{font-size:10.5px;color:var(--muted);margin-top:1px}
+  .tile.r-open{background:#e8f4ec;border-color:#bfe0cb}
+  .tile.r-open .tl-h{color:#1d6b3f}.tile.r-open .tl-s{color:#2f8f5b}
+  .tile.r-busy .tl-h{color:var(--faint);font-size:13.5px}
+  .tile.t-free{background:#eaf2fb;border-color:#c6ddf0}
+  .tile.t-free .tl-h{color:var(--accent)}.tile.t-free .tl-s{color:var(--accent)}
+  .tile.t-busy .tl-h{color:var(--muted);font-weight:750;font-size:13.5px}
+  .tile.t-busy .tl-c{color:var(--faint)}
+  .tile.adj .tl-h::after{content:" · adj";font-size:9px;color:var(--faint);font-weight:600;letter-spacing:0}
+
+  /* browser Print path = B&W landscape (the PDF button is the primary export) */
+  #printRoot{display:none}
+  @media print{
+    @page{size:11in 8.5in;margin:0.4in}
+    body{background:#fff}
+    .topbar,.controls,.legend,.wrap,.no-print{display:none !important}
+    #printRoot{display:block}
+    .pp{page-break-after:always;break-inside:avoid}
+    .pp:last-child{page-break-after:auto}
+    .pp-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:10px}
+    .pp-head .pn{font-size:19px;font-weight:800}
+    .pp-head .pm{font-size:11px;color:#333}
+    .pp-week{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .pp-day h4{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#000;border-bottom:1px solid #000;padding-bottom:3px;margin-bottom:6px}
+    .pp-cell{border:1px solid #999;border-radius:5px;padding:5px 7px;margin-bottom:5px}
+    .pp-cell .pt{font-size:9px;color:#555;font-weight:700}
+    .pp-cell .pc{font-size:12px;font-weight:800}
+    .pp-cell .pr{font-size:9.5px;color:#333}
+    .pp-cell.pl .pc{font-weight:600;font-style:italic;color:#666}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Faculty Schedule Viewer <span class="ver" id="ver"></span></div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-view="teacher">Teacher</button>
+      <button class="tab" data-view="room">Room</button>
+      <button class="tab" data-view="grade">Grade</button>
+      <button class="tab" data-view="find">Find Open</button>
+    </div>
+    <div class="spacer"></div>
+    
+    <button class="btn" id="pdfBtn">Download PDF</button>
+    <button class="btn primary" id="printBtn">Print</button>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="days" id="days"></div>
+    <div class="sep"></div>
+    <div class="only-wrap">
+      <button class="only-btn" id="onlyBtn">Show only…</button>
+      <div class="only-panel" id="onlyPanel" style="display:none"></div>
+    </div>
+    <div class="filter"><input id="filter" placeholder="Filter…" autocomplete="off"></div>
+    <span class="count" id="count"></span>
+    <button class="link" id="clearF" style="display:none">Clear</button>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <div class="wrap"><div id="main"></div></div>
+  <div id="printRoot"></div>
+
+<script>
+const S = {
+ "version": "Fall 2026",
+ "extracted_from": "Master Schedule - Fall 2026.xlsx",
+ "days": [
+  "Mon",
+  "Tue",
+  "Wed",
+  "Thu",
+  "Fri"
+ ],
+ "rooms": [
+  "105",
+  "106",
+  "108",
+  "201",
+  "203",
+  "203/205",
+  "205",
+  "208",
+  "301",
+  "302",
+  "303",
+  "304",
+  "305",
+  "306",
+  "Commons",
+  "Modular 2",
+  "Shop"
+ ],
+ "non_bookable_rooms": [
+  "Commons"
+ ],
+ "period_slots": [
+  {
+   "id": "Mon_Period_1",
+   "day": "Mon",
+   "label": "Period 1",
+   "block": "A",
+   "minutes": 50,
+   "time": "8:50-9:40",
+   "grade_group": "all",
+   "row_group_start": 0
+  },
+  {
+   "id": "Mon_Period_2",
+   "day": "Mon",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 50,
+   "time": "9:45-10:35",
+   "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Mon_Period_3",
+   "day": "Mon",
+   "label": "Period 3",
+   "block": "D",
+   "minutes": 50,
+   "time": "10:50-11:40",
+   "grade_group": "all",
+   "row_group_start": 2
+  },
+  {
+   "id": "Mon_Period_4",
+   "day": "Mon",
+   "label": "Period 4",
+   "block": "E",
+   "minutes": 50,
+   "time": "11:45-12:35",
+   "grade_group": "all",
+   "row_group_start": 3
+  },
+  {
+   "id": "Mon_Period_5",
+   "day": "Mon",
+   "label": "Period 5",
+   "block": "C",
+   "minutes": 50,
+   "time": "1:25-2:15",
+   "grade_group": "all",
+   "row_group_start": 4
+  },
+  {
+   "id": "Mon_Period_6",
+   "day": "Mon",
+   "label": "Period 6",
+   "block": "F",
+   "minutes": 50,
+   "time": "2:20-3:10",
+   "grade_group": "all",
+   "row_group_start": 5
+  },
+  {
+   "id": "Tue_Period_1",
+   "day": "Tue",
+   "label": "Period 1",
+   "block": "A",
+   "minutes": 75,
+   "time": "8:50-10:05",
+   "grade_group": "all",
+   "row_group_start": 0
+  },
+  {
+   "id": "Tue_Period_2",
+   "day": "Tue",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:30",
+   "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Tue_Flex_A",
+   "day": "Tue",
+   "label": "Flex A",
+   "block": null,
+   "minutes": 50,
+   "time": "11:35-12:25",
+   "grade_group": "all",
+   "row_group_start": 2
+  },
+  {
+   "id": "Tue_Block_C_912",
+   "day": "Tue",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "1:05-2:20",
+   "grade_group": "912",
+   "row_group_start": 3
+  },
+  {
+   "id": "Tue_Practica_A",
+   "day": "Tue",
+   "label": "Practica A",
+   "block": null,
+   "minutes": 50,
+   "time": "1:05-1:55",
+   "grade_group": "78",
+   "row_group_start": 4
+  },
+  {
+   "id": "Tue_Block_C",
+   "day": "Tue",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "2:00-3:15",
+   "grade_group": "78",
+   "row_group_start": 5
+  },
+  {
+   "id": "Tue_Practica_B",
+   "day": "Tue",
+   "label": "Practica B",
+   "block": null,
+   "minutes": 50,
+   "time": "2:25-3:15",
+   "grade_group": "all",
+   "row_group_start": 6
+  },
+  {
+   "id": "Wed_Flex_B",
+   "day": "Wed",
+   "label": "Flex B",
+   "block": null,
+   "minutes": 50,
+   "time": "8:30-9:20",
+   "grade_group": "all",
+   "row_group_start": 0
+  },
+  {
+   "id": "Wed_Period_1",
+   "day": "Wed",
+   "label": "Period 1",
+   "block": "D",
+   "minutes": 75,
+   "time": "9:20-10:35",
+   "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Wed_Period_2",
+   "day": "Wed",
+   "label": "Period 2",
+   "block": "E",
+   "minutes": 75,
+   "time": "10:45-12:00",
+   "grade_group": "all",
+   "row_group_start": 2
+  },
+  {
+   "id": "Wed_Period_3",
+   "day": "Wed",
+   "label": "Period 3",
+   "block": "F",
+   "minutes": 75,
+   "time": "1:05-2:20",
+   "grade_group": "all",
+   "row_group_start": 3
+  },
+  {
+   "id": "Wed_PRAC_2",
+   "day": "Wed",
+   "label": "PRAC 2",
+   "block": null,
+   "minutes": 50,
+   "time": "2:25-3:15",
+   "grade_group": "all",
+   "row_group_start": 4
+  },
+  {
+   "id": "Thu_Period_1",
+   "day": "Thu",
+   "label": "Period 1",
+   "block": "A",
+   "minutes": 75,
+   "time": "8:50-10:05",
+   "grade_group": "all",
+   "row_group_start": 0
+  },
+  {
+   "id": "Thu_Period_2",
+   "day": "Thu",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:30",
+   "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Thu_Flex_C",
+   "day": "Thu",
+   "label": "Flex C",
+   "block": null,
+   "minutes": 50,
+   "time": "11:35-12:25",
+   "grade_group": "all",
+   "row_group_start": 2
+  },
+  {
+   "id": "Thu_Block_C_912",
+   "day": "Thu",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "1:05-2:20",
+   "grade_group": "912",
+   "row_group_start": 3
+  },
+  {
+   "id": "Thu_Practica_A",
+   "day": "Thu",
+   "label": "Practica A",
+   "block": null,
+   "minutes": 50,
+   "time": "1:05-1:55",
+   "grade_group": "78",
+   "row_group_start": 4
+  },
+  {
+   "id": "Thu_Block_C",
+   "day": "Thu",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "2:00-3:15",
+   "grade_group": "78",
+   "row_group_start": 5
+  },
+  {
+   "id": "Thu_Practica_B",
+   "day": "Thu",
+   "label": "Practica B",
+   "block": null,
+   "minutes": 50,
+   "time": "2:25-3:15",
+   "grade_group": "all",
+   "row_group_start": 6
+  },
+  {
+   "id": "Fri_Period_1",
+   "day": "Fri",
+   "label": "Period 1",
+   "block": "E",
+   "minutes": 75,
+   "time": "8:50-10:05",
+   "grade_group": "all",
+   "row_group_start": 0
+  },
+  {
+   "id": "Fri_Period_2",
+   "day": "Fri",
+   "label": "Period 2",
+   "block": "D",
+   "minutes": 75,
+   "time": "11:10-12:25",
+   "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Fri_Period_3",
+   "day": "Fri",
+   "label": "Period 3",
+   "block": "F",
+   "minutes": 75,
+   "time": "1:05-2:20",
+   "grade_group": "all",
+   "row_group_start": 2
+  },
+  {
+   "id": "Fri_PRAC_2",
+   "day": "Fri",
+   "label": "PRAC 2",
+   "block": null,
+   "minutes": 50,
+   "time": "2:25-3:15",
+   "grade_group": "all",
+   "row_group_start": 3
+  }
+ ],
+ "classes": [
+  {
+   "id": "10_history_proffitt",
+   "subject": "10 History",
+   "teachers": [
+    "Proffitt"
+   ],
+   "grades": [
+    "10"
+   ],
+   "rooms": [
+    "301"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r134",
+     "room": "301",
+     "time": "8:50-9:40",
+     "raw": "10 History - Proffitt - 301"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r136",
+     "room": "301",
+     "time": "8:50-10:05",
+     "raw": "10 History - Proffitt - 301"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r138",
+     "room": "301",
+     "time": "8:50-10:05",
+     "raw": "10 History - Proffitt - 301"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "10_literature_sutton",
+   "subject": "10 Literature",
+   "teachers": [
+    "Sutton"
+   ],
+   "grades": [
+    "10"
+   ],
+   "rooms": [
+    "201"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r162",
+     "room": "201",
+     "time": "1:25-2:15",
+     "raw": "10 Literature - Sutton - 201"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r169",
+     "room": "201",
+     "time": "1:05-2:20",
+     "raw": "10 Literature - Sutton - 201"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r173",
+     "room": "201",
+     "time": "1:05-2:20",
+     "raw": "10 Literature - Sutton - 201"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "10_physics_k_marks",
+   "subject": "10 Physics",
+   "teachers": [
+    "K. Marks"
+   ],
+   "grades": [
+    "10"
+   ],
+   "rooms": [
+    "105"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r108",
+     "room": "105",
+     "time": "9:45-10:35",
+     "raw": "10 Physics - K. Marks - 105"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r112",
+     "room": "105",
+     "time": "10:15-11:30",
+     "raw": "10 Physics - K. Marks - 105"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r116",
+     "room": "105",
+     "time": "10:15-11:30",
+     "raw": "10 Physics - K. Marks - 105"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "10_rhetoric_hobson",
+   "subject": "10 Rhetoric",
+   "teachers": [
+    "Hobson"
+   ],
+   "grades": [
+    "10"
+   ],
+   "rooms": [
+    "302"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r88",
+     "room": "302",
+     "time": "2:20-3:10",
+     "raw": "10 Rhetoric - Hobson - 302"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r91",
+     "room": "302",
+     "time": "1:05-2:20",
+     "raw": "10 Rhetoric - Hobson - 302"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r94",
+     "room": "302",
+     "time": "1:05-2:20",
+     "raw": "10 Rhetoric - Hobson - 302"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "10_spanish_ii_hanbury",
+   "subject": "10 Spanish II",
+   "teachers": [
+    "Hanbury"
+   ],
+   "grades": [
+    "10"
+   ],
+   "rooms": [
+    "302"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r77",
+     "room": "302",
+     "time": "10:50-11:40",
+     "raw": "10 Spanish II - Hanbury - 302"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r82",
+     "room": "302",
+     "time": "9:20-10:35",
+     "raw": "10 Spanish II - Hanbury - 302"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r86",
+     "room": "302",
+     "time": "11:10-12:25",
+     "raw": "10 Spanish II - Hanbury - 302"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "10_11_geometry_jackson",
+   "subject": "10/11 Geometry",
+   "teachers": [
+    "Jackson"
+   ],
+   "grades": [
+    "10",
+    "11"
+   ],
+   "rooms": [
+    "303"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10",
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r101",
+     "room": "303",
+     "time": "11:45-12:35",
+     "raw": "10/11 Geometry - Jackson - 303"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10",
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r103",
+     "room": "303",
+     "time": "10:45-12:00",
+     "raw": "10/11 Geometry - Jackson - 303"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10",
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r106",
+     "room": "303",
+     "time": "8:50-10:05",
+     "raw": "10/11 Geometry - Jackson - 303"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "10_11_pre_calc_farris",
+   "subject": "10/11 Pre-Calc",
+   "teachers": [
+    "Farris"
+   ],
+   "grades": [
+    "10",
+    "11"
+   ],
+   "rooms": [
+    "305",
+    "301"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "10",
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r69",
+     "room": "305",
+     "time": "11:45-12:35",
+     "raw": "10/11 Pre-Calc - Farris - 305"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10",
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r72",
+     "room": "305",
+     "time": "10:45-12:00",
+     "raw": "10/11 Pre-Calc - Farris - 305"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "10",
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r73",
+     "room": "301",
+     "time": "8:50-10:05",
+     "raw": "10/11 Pre-Calc - Farris - 301"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "11_chemistry_k_marks",
+   "subject": "11 Chemistry",
+   "teachers": [
+    "K. Marks"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "105"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r111",
+     "room": "105",
+     "time": "2:20-3:10",
+     "raw": "11 Chemistry - K. Marks - 105"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r113",
+     "room": "105",
+     "time": "1:05-2:20",
+     "raw": "11 Chemistry - K. Marks - 105"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r117",
+     "room": "105",
+     "time": "1:05-2:20",
+     "raw": "11 Chemistry - K. Marks - 105"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "11_history_proffitt",
+   "subject": "11 History",
+   "teachers": [
+    "Proffitt"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "301"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r135",
+     "room": "301",
+     "time": "10:50-11:40",
+     "raw": "11 History - Proffitt - 301"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r137",
+     "room": "301",
+     "time": "9:20-10:35",
+     "raw": "11 History - Proffitt - 301"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r139",
+     "room": "301",
+     "time": "11:10-12:25",
+     "raw": "11 History - Proffitt - 301"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "11_latin_iii_stover",
+   "subject": "11 Latin III",
+   "teachers": [
+    "Stover"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "304"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r149",
+     "room": "304",
+     "time": "9:45-10:35",
+     "raw": "11 Latin III - Stover - 304"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r153",
+     "room": "304",
+     "time": "10:15-11:30",
+     "raw": "11 Latin III - Stover - 304"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r158",
+     "room": "304",
+     "time": "10:15-11:30",
+     "raw": "11 Latin III - Stover - 304"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "11_literature_bowling",
+   "subject": "11 Literature",
+   "teachers": [
+    "Bowling"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "208"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r18",
+     "room": "208",
+     "time": "8:50-9:40",
+     "raw": "11 Literature - Bowling - 208"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r26",
+     "room": "208",
+     "time": "1:05-2:20",
+     "raw": "11 Literature - Bowling - 208"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r31",
+     "room": "208",
+     "time": "1:05-2:20",
+     "raw": "11 Literature - Bowling - 208"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "11_rhetoric_hobson",
+   "subject": "11 Rhetoric",
+   "teachers": [
+    "Hobson"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "203"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r87",
+     "room": "203",
+     "time": "1:25-2:15",
+     "raw": "11 Rhetoric - Hobson - 203"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r89",
+     "room": "203",
+     "time": "8:50-10:05",
+     "raw": "11 Rhetoric - Hobson - 203"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r92",
+     "room": "203",
+     "time": "8:50-10:05",
+     "raw": "11 Rhetoric - Hobson - 203"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "11_spanish_iii_hanbury",
+   "subject": "11 Spanish III",
+   "teachers": [
+    "Hanbury"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "302"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r76",
+     "room": "302",
+     "time": "9:45-10:35",
+     "raw": "11 Spanish III - Hanbury - 302"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r80",
+     "room": "302",
+     "time": "10:15-11:30",
+     "raw": "11 Spanish III - Hanbury - 302"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r85",
+     "room": "302",
+     "time": "10:15-11:30",
+     "raw": "11 Spanish III - Hanbury - 302"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_ap_calculus_kelly",
+   "subject": "12 AP Calculus",
+   "teachers": [
+    "Kelly"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "108"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r122",
+     "room": "108",
+     "time": "11:45-12:35",
+     "raw": "12 AP Calculus - Kelly - 108"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r126",
+     "room": "108",
+     "time": "10:45-12:00",
+     "raw": "12 AP Calculus - Kelly - 108"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r130",
+     "room": "108",
+     "time": "8:50-10:05",
+     "raw": "12 AP Calculus - Kelly - 108"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_ap_latin_stover",
+   "subject": "12 AP Latin",
+   "teachers": [
+    "Stover"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "304"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r148",
+     "room": "304",
+     "time": "8:50-9:40",
+     "raw": "12 AP Latin - Stover - 304"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r152",
+     "room": "304",
+     "time": "8:50-10:05",
+     "raw": "12 AP Latin - Stover - 304"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r157",
+     "room": "304",
+     "time": "8:50-10:05",
+     "raw": "12 AP Latin - Stover - 304"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_ap_physics_k_marks",
+   "subject": "12 AP Physics",
+   "teachers": [
+    "K. Marks"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "105"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r110",
+     "room": "105",
+     "time": "1:25-2:15",
+     "raw": "12 AP Physics - K. Marks - 105"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r115",
+     "room": "105",
+     "time": "1:05-2:20",
+     "raw": "12 AP Physics - K. Marks - 105"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r119",
+     "room": "105",
+     "time": "1:05-2:20",
+     "raw": "12 AP Physics - K. Marks - 105"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_ap_spanish_hanbury",
+   "subject": "12 AP Spanish",
+   "teachers": [
+    "Hanbury"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "302"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r75",
+     "room": "302",
+     "time": "8:50-9:40",
+     "raw": "12 AP Spanish - Hanbury - 302"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r79",
+     "room": "302",
+     "time": "8:50-10:05",
+     "raw": "12 AP Spanish - Hanbury - 302"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r84",
+     "room": "302",
+     "time": "8:50-10:05",
+     "raw": "12 AP Spanish - Hanbury - 302"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_at_guidance_jackson",
+   "subject": "12 AT/Guidance",
+   "teachers": [
+    "Jackson"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "303"
+   ],
+   "sessions": [
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r105",
+     "room": "303",
+     "time": "1:05-2:20",
+     "raw": "12 AT/Guidance - Jackson - 303"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_applied_theology_turek",
+   "subject": "12 Applied Theology",
+   "teachers": [
+    "Turek"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "303"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r178",
+     "room": "303",
+     "time": "10:50-11:40",
+     "raw": "12 Applied Theology - Turek - 303"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r181",
+     "room": "303",
+     "time": "11:35-12:25",
+     "raw": "12 Applied Theology - Turek - 303"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r185",
+     "room": "303",
+     "time": "11:35-12:25",
+     "raw": "12 Applied Theology - Turek - 303"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_hap_e_marks",
+   "subject": "12 HAP",
+   "teachers": [
+    "E. Marks"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "108",
+    "203"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r58",
+     "room": "108",
+     "time": "1:25-2:15",
+     "raw": "12 HAP - E. Marks - 108"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r61",
+     "room": "108",
+     "time": "1:05-2:20",
+     "raw": "12 HAP - E. Marks - 108"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r63",
+     "room": "203",
+     "time": "1:05-2:20",
+     "raw": "12 HAP - E. Marks - 203"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_history_bowling",
+   "subject": "12 History",
+   "teachers": [
+    "Bowling"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "208"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r19",
+     "room": "208",
+     "time": "9:45-10:35",
+     "raw": "12 History - Bowling - 208"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r23",
+     "room": "208",
+     "time": "10:15-11:30",
+     "raw": "12 History - Bowling - 208"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r28",
+     "room": "208",
+     "time": "10:15-11:30",
+     "raw": "12 History - Bowling - 208"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_literature_sutton",
+   "subject": "12 Literature",
+   "teachers": [
+    "Sutton"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "201"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r163",
+     "room": "201",
+     "time": "2:20-3:10",
+     "raw": "12 Literature - Sutton - 201"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r167",
+     "room": "201",
+     "time": "9:20-10:35",
+     "raw": "12 Literature - Sutton - 201"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r172",
+     "room": "201",
+     "time": "11:10-12:25",
+     "raw": "12 Literature - Sutton - 201"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "12_statistics_corley",
+   "subject": "12 Statistics",
+   "teachers": [
+    "Corley"
+   ],
+   "grades": [
+    "12"
+   ],
+   "rooms": [
+    "306"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r42",
+     "room": "306",
+     "time": "11:45-12:35",
+     "raw": "12 Statistics - Corley - 306"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r50",
+     "room": "306",
+     "time": "10:45-12:00",
+     "raw": "12 Statistics - Corley - 306"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r54",
+     "room": "306",
+     "time": "8:50-10:05",
+     "raw": "12 Statistics - Corley - 306"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7_history_combined_e_marks",
+   "subject": "7 History (Combined)",
+   "teachers": [
+    "E. Marks"
+   ],
+   "grades": [
+    "7A",
+    "7B"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A",
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r62",
+     "room": "305",
+     "time": "8:50-10:05",
+     "raw": "7 History (Combined) - E. Marks - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7_latin_combined_edwards",
+   "subject": "7 Latin (Combined)",
+   "teachers": [
+    "Edwards"
+   ],
+   "grades": [
+    "7A",
+    "7B"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A",
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r64",
+     "room": "305",
+     "time": "1:25-2:15",
+     "raw": "7 Latin (Combined) - Edwards - 305"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A",
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r65",
+     "room": "305",
+     "time": "1:05-2:20",
+     "raw": "7 Latin (Combined) - Edwards - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7_8_choir_kelly",
+   "subject": "7/8 Choir",
+   "teachers": [
+    "Kelly"
+   ],
+   "grades": [
+    "7A",
+    "7B",
+    "8"
+   ],
+   "rooms": [
+    "Commons"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A",
+      "7B",
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r121",
+     "room": "Commons",
+     "time": "9:45-10:35",
+     "raw": "7/8 Choir - Kelly - Commons"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A",
+      "7B",
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r127",
+     "room": "Commons",
+     "time": "2:25-3:15",
+     "raw": "7/8 Choir - Kelly - Commons"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_bible_boys_hooks",
+   "subject": "7A Bible Boys",
+   "teachers": [
+    "Hooks"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "203"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r95",
+     "room": "203",
+     "time": "10:15-11:30",
+     "raw": "7A Bible Boys - Hooks - 203"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r98",
+     "room": "203",
+     "time": "10:15-11:30",
+     "raw": "7A Bible Boys - Hooks - 203"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_earth_science_kelly",
+   "subject": "7A Earth Science",
+   "teachers": [
+    "Kelly"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "108"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r120",
+     "room": "108",
+     "time": "8:50-9:40",
+     "raw": "7A Earth Science - Kelly - 108"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r128",
+     "room": "108",
+     "time": "8:50-10:05",
+     "raw": "7A Earth Science - Kelly - 108"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r131",
+     "room": "108",
+     "time": "11:10-12:25",
+     "raw": "7A Earth Science - Kelly - 108"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_foundations_shuler",
+   "subject": "7A Foundations",
+   "teachers": [
+    "Shuler"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_A",
+     "period_label": "Practica A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r141",
+     "room": "305",
+     "time": "1:05-1:55",
+     "raw": "7A Foundations - Shuler - 305"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r145",
+     "room": "305",
+     "time": "11:35-12:25",
+     "raw": "7A Foundations - Shuler - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_history_e_marks",
+   "subject": "7A History",
+   "teachers": [
+    "E. Marks"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "301"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r56",
+     "room": "301",
+     "time": "11:45-12:35",
+     "raw": "7A History - E. Marks - 301"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Flex_B",
+     "period_label": "Flex B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r59",
+     "room": "301",
+     "time": "8:30-9:20",
+     "raw": "7A History - E. Marks - 301"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_latin_edwards",
+   "subject": "7A Latin",
+   "teachers": [
+    "Edwards"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r67",
+     "room": "305",
+     "time": "1:05-2:20",
+     "raw": "7A Latin - Edwards - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_literature_sutton",
+   "subject": "7A Literature",
+   "teachers": [
+    "Sutton"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "201"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r164",
+     "room": "201",
+     "time": "8:50-10:05",
+     "raw": "7A Literature - Sutton - 201"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r168",
+     "room": "201",
+     "time": "10:45-12:00",
+     "raw": "7A Literature - Sutton - 201"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r174",
+     "room": "201",
+     "time": "2:25-3:15",
+     "raw": "7A Literature - Sutton - 201"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_logic_corley",
+   "subject": "7A Logic",
+   "teachers": [
+    "Corley"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "306"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r45",
+     "room": "306",
+     "time": "11:35-12:25",
+     "raw": "7A Logic - Corley - 306"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_A",
+     "period_label": "Practica A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r51",
+     "room": "306",
+     "time": "1:05-1:55",
+     "raw": "7A Logic - Corley - 306"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_math_corley",
+   "subject": "7A Math",
+   "teachers": [
+    "Corley"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "306"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r43",
+     "room": "306",
+     "time": "10:50-11:40",
+     "raw": "7A Math - Corley - 306"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r47",
+     "room": "306",
+     "time": "2:00-3:15",
+     "raw": "7A Math - Corley - 306"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r49",
+     "room": "306",
+     "time": "9:20-10:35",
+     "raw": "7A Math - Corley - 306"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r53",
+     "room": "306",
+     "time": "2:00-3:15",
+     "raw": "7A Math - Corley - 306"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_pe_cooper",
+   "subject": "7A PE",
+   "teachers": [
+    "Cooper"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "rooms": [
+    "Shop"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r38",
+     "room": "Shop",
+     "time": "2:20-3:10",
+     "raw": "7A PE - Cooper - Shop"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_bible_girls_crim",
+   "subject": "7B Bible Girls",
+   "teachers": [
+    "Crim"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "205"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r32",
+     "room": "205",
+     "time": "10:15-11:30",
+     "raw": "7B Bible Girls - Crim - 205"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r35",
+     "room": "205",
+     "time": "10:15-11:30",
+     "raw": "7B Bible Girls - Crim - 205"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_earth_science_kelly",
+   "subject": "7B Earth Science",
+   "teachers": [
+    "Kelly"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "108"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r123",
+     "room": "108",
+     "time": "2:20-3:10",
+     "raw": "7B Earth Science - Kelly - 108"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r125",
+     "room": "108",
+     "time": "9:20-10:35",
+     "raw": "7B Earth Science - Kelly - 108"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 25,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r132",
+     "room": "108",
+     "time": "1:05-2:20",
+     "raw": "7B Earth Science - Kelly - 108"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r133",
+     "room": "108",
+     "time": "2:25-3:15",
+     "raw": "7B Earth Science - Kelly - 108"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_foundations_shuler",
+   "subject": "7B Foundations",
+   "teachers": [
+    "Shuler"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r140",
+     "room": "305",
+     "time": "11:35-12:25",
+     "raw": "7B Foundations - Shuler - 305"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_A",
+     "period_label": "Practica A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r144",
+     "room": "305",
+     "time": "1:05-1:55",
+     "raw": "7B Foundations - Shuler - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_history_e_marks",
+   "subject": "7B History",
+   "teachers": [
+    "E. Marks"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "305",
+    "301"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r57",
+     "room": "305",
+     "time": "10:50-11:40",
+     "raw": "7B History - E. Marks - 305"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r60",
+     "room": "301",
+     "time": "10:45-12:00",
+     "raw": "7B History - E. Marks - 301"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_latin_edwards",
+   "subject": "7B Latin",
+   "teachers": [
+    "Edwards"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r66",
+     "room": "305",
+     "time": "8:50-10:05",
+     "raw": "7B Latin - Edwards - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_literature_sutton",
+   "subject": "7B Literature",
+   "teachers": [
+    "Sutton"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "201"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r161",
+     "room": "201",
+     "time": "11:45-12:35",
+     "raw": "7B Literature - Sutton - 201"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r166",
+     "room": "201",
+     "time": "2:00-3:15",
+     "raw": "7B Literature - Sutton - 201"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r171",
+     "room": "201",
+     "time": "2:00-3:15",
+     "raw": "7B Literature - Sutton - 201"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_logic_corley",
+   "subject": "7B Logic",
+   "teachers": [
+    "Corley"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "306"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_A",
+     "period_label": "Practica A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r46",
+     "room": "306",
+     "time": "1:05-1:55",
+     "raw": "7B Logic - Corley - 306"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r52",
+     "room": "306",
+     "time": "11:35-12:25",
+     "raw": "7B Logic - Corley - 306"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_math_farris",
+   "subject": "7B Math",
+   "teachers": [
+    "Farris"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "303"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r68",
+     "room": "303",
+     "time": "8:50-9:40",
+     "raw": "7B Math - Farris - 303"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r70",
+     "room": "303",
+     "time": "8:50-10:05",
+     "raw": "7B Math - Farris - 303"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Flex_B",
+     "period_label": "Flex B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r71",
+     "room": "303",
+     "time": "8:30-9:20",
+     "raw": "7B Math - Farris - 303"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r74",
+     "room": "303",
+     "time": "11:10-12:25",
+     "raw": "7B Math - Farris - 303"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7b_pe_cooper",
+   "subject": "7B PE",
+   "teachers": [
+    "Cooper"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "rooms": [
+    "Shop"
+   ],
+   "sessions": [
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r39",
+     "room": "Shop",
+     "time": "1:05-2:20",
+     "raw": "7B PE - Cooper - Shop"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_art_tolley",
+   "subject": "8 Art",
+   "teachers": [
+    "Tolley"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "106"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_A",
+     "period_label": "Practica A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r175",
+     "room": "106",
+     "time": "1:05-1:55",
+     "raw": "8 Art - Tolley - 106"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_A",
+     "period_label": "Practica A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r176",
+     "room": "106",
+     "time": "1:05-1:55",
+     "raw": "8 Art - Tolley - 106"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_bible_boys_hooks",
+   "subject": "8 Bible Boys",
+   "teachers": [
+    "Hooks"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "203"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r96",
+     "room": "203",
+     "time": "11:35-12:25",
+     "raw": "8 Bible Boys - Hooks - 203"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r99",
+     "room": "203",
+     "time": "11:35-12:25",
+     "raw": "8 Bible Boys - Hooks - 203"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_bible_girls_crim",
+   "subject": "8 Bible Girls",
+   "teachers": [
+    "Crim"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "205"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r33",
+     "room": "205",
+     "time": "11:35-12:25",
+     "raw": "8 Bible Girls - Crim - 205"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r36",
+     "room": "205",
+     "time": "11:35-12:25",
+     "raw": "8 Bible Girls - Crim - 205"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_history_bowling",
+   "subject": "8 History",
+   "teachers": [
+    "Bowling"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "208"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r22",
+     "room": "208",
+     "time": "2:20-3:10",
+     "raw": "8 History - Bowling - 208"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r24",
+     "room": "208",
+     "time": "2:00-3:15",
+     "raw": "8 History - Bowling - 208"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r29",
+     "room": "208",
+     "time": "2:00-3:15",
+     "raw": "8 History - Bowling - 208"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_latin_i_stover",
+   "subject": "8 Latin I",
+   "teachers": [
+    "Stover"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "304"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r151",
+     "room": "304",
+     "time": "1:25-2:15",
+     "raw": "8 Latin I - Stover - 304"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r156",
+     "room": "304",
+     "time": "1:05-2:20",
+     "raw": "8 Latin I - Stover - 304"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r159",
+     "room": "304",
+     "time": "1:05-2:20",
+     "raw": "8 Latin I - Stover - 304"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_literature_turek",
+   "subject": "8 Literature",
+   "teachers": [
+    "Turek"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "205"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r179",
+     "room": "205",
+     "time": "11:45-12:35",
+     "raw": "8 Literature - Turek - 205"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r183",
+     "room": "205",
+     "time": "9:20-10:35",
+     "raw": "8 Literature - Turek - 205"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r184",
+     "room": "205",
+     "time": "8:50-10:05",
+     "raw": "8 Literature - Turek - 205"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_logic_hobson",
+   "subject": "8 Logic",
+   "teachers": [
+    "Hobson"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "306"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r90",
+     "room": "306",
+     "time": "10:15-11:30",
+     "raw": "8 Logic - Hobson - 306"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r93",
+     "room": "306",
+     "time": "10:15-11:30",
+     "raw": "8 Logic - Hobson - 306"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_pe_cooper",
+   "subject": "8 PE",
+   "teachers": [
+    "Cooper"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "Shop"
+   ],
+   "sessions": [
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r40",
+     "room": "Shop",
+     "time": "2:25-3:15",
+     "raw": "8 PE - Cooper - Shop"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_physical_science_k_marks",
+   "subject": "8 Physical Science",
+   "teachers": [
+    "K. Marks"
+   ],
+   "grades": [
+    "8"
+   ],
+   "rooms": [
+    "105"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r109",
+     "room": "105",
+     "time": "10:50-11:40",
+     "raw": "8 Physical Science - K. Marks - 105"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r114",
+     "room": "105",
+     "time": "10:45-12:00",
+     "raw": "8 Physical Science - K. Marks - 105"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "r118",
+     "room": "105",
+     "time": "8:50-10:05",
+     "raw": "8 Physical Science - K. Marks - 105"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_9_algebra_turek",
+   "subject": "8/9 Algebra",
+   "teachers": [
+    "Turek"
+   ],
+   "grades": [
+    "8",
+    "9"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r177",
+     "room": "305",
+     "time": "8:50-9:40",
+     "raw": "8/9 Algebra - Turek - 305"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r180",
+     "room": "305",
+     "time": "8:50-10:05",
+     "raw": "8/9 Algebra - Turek - 305"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Flex_B",
+     "period_label": "Flex B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r182",
+     "room": "305",
+     "time": "8:30-9:20",
+     "raw": "8/9 Algebra - Turek - 305"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r186",
+     "room": "305",
+     "time": "11:10-12:25",
+     "raw": "8/9 Algebra - Turek - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "8_9_geometry_corley",
+   "subject": "8/9 Geometry",
+   "teachers": [
+    "Corley"
+   ],
+   "grades": [
+    "8",
+    "9"
+   ],
+   "rooms": [
+    "306"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 50,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r41",
+     "room": "306",
+     "time": "8:50-9:40",
+     "raw": "8/9 Geometry - Corley - 306"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r44",
+     "room": "306",
+     "time": "8:50-10:05",
+     "raw": "8/9 Geometry - Corley - 306"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Flex_B",
+     "period_label": "Flex B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r48",
+     "room": "306",
+     "time": "8:30-9:20",
+     "raw": "8/9 Geometry - Corley - 306"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_2",
+     "period_label": "Period 2",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "8",
+      "9"
+     ],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r55",
+     "room": "306",
+     "time": "11:10-12:25",
+     "raw": "8/9 Geometry - Corley - 306"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_bible_crim",
+   "subject": "9 Bible",
+   "teachers": [
+    "Crim"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "203/205"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r34",
+     "room": "203/205",
+     "time": "1:05-2:20",
+     "raw": "9 Bible - Crim - 203/205"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r37",
+     "room": "203/205",
+     "time": "1:05-2:20",
+     "raw": "9 Bible - Crim - 203/205"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_bible_hooks",
+   "subject": "9 Bible",
+   "teachers": [
+    "Hooks"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "203/205"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r97",
+     "room": "203/205",
+     "time": "1:05-2:20",
+     "raw": "9 Bible - Hooks - 203/205"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r100",
+     "room": "203/205",
+     "time": "1:05-2:20",
+     "raw": "9 Bible - Hooks - 203/205"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_biology_jackson",
+   "subject": "9 Biology",
+   "teachers": [
+    "Jackson"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "303"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_6",
+     "period_label": "Period 6",
+     "period_block": "F",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r102",
+     "room": "303",
+     "time": "2:20-3:10",
+     "raw": "9 Biology - Jackson - 303"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r104",
+     "room": "303",
+     "time": "1:05-2:20",
+     "raw": "9 Biology - Jackson - 303"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_3",
+     "period_label": "Period 3",
+     "period_block": "F",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r107",
+     "room": "303",
+     "time": "1:05-2:20",
+     "raw": "9 Biology - Jackson - 303"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_dialectic_bowling",
+   "subject": "9 Dialectic",
+   "teachers": [
+    "Bowling"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "208"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_5",
+     "period_label": "Period 5",
+     "period_block": "C",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r21",
+     "room": "208",
+     "time": "1:25-2:15",
+     "raw": "9 Dialectic - Bowling - 208"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r30",
+     "room": "208",
+     "time": "8:50-10:05",
+     "raw": "9 Dialectic - Bowling - 208"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_history_bowling",
+   "subject": "9 History",
+   "teachers": [
+    "Bowling"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "208"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_3",
+     "period_label": "Period 3",
+     "period_block": "D",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r20",
+     "room": "208",
+     "time": "10:50-11:40",
+     "raw": "9 History - Bowling - 208"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r25",
+     "room": "208",
+     "time": "9:20-10:35",
+     "raw": "9 History - Bowling - 208"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_1",
+     "period_label": "Period 1",
+     "period_block": "A",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r27",
+     "room": "208",
+     "time": "8:50-10:05",
+     "raw": "9 History - Bowling - 208"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_latin_ii_stover",
+   "subject": "9 Latin II",
+   "teachers": [
+    "Stover"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "304"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r150",
+     "room": "304",
+     "time": "11:45-12:35",
+     "raw": "9 Latin II - Stover - 304"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r154",
+     "room": "304",
+     "time": "11:35-12:25",
+     "raw": "9 Latin II - Stover - 304"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r155",
+     "room": "304",
+     "time": "10:45-12:00",
+     "raw": "9 Latin II - Stover - 304"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_literature_sutton",
+   "subject": "9 Literature",
+   "teachers": [
+    "Sutton"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "201"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r160",
+     "room": "201",
+     "time": "9:45-10:35",
+     "raw": "9 Literature - Sutton - 201"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r165",
+     "room": "201",
+     "time": "10:15-11:30",
+     "raw": "9 Literature - Sutton - 201"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r170",
+     "room": "201",
+     "time": "10:15-11:30",
+     "raw": "9 Literature - Sutton - 201"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_spanish_i_hanbury",
+   "subject": "9 Spanish I",
+   "teachers": [
+    "Hanbury"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "302"
+   ],
+   "sessions": [
+    {
+     "day": "Mon",
+     "period_id": "Mon_Period_4",
+     "period_label": "Period 4",
+     "period_block": "E",
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r78",
+     "room": "302",
+     "time": "11:45-12:35",
+     "raw": "9 Spanish I - Hanbury - 302"
+    },
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r81",
+     "room": "302",
+     "time": "11:35-12:25",
+     "raw": "9 Spanish I - Hanbury - 302"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r83",
+     "room": "302",
+     "time": "10:45-12:00",
+     "raw": "9 Spanish I - Hanbury - 302"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "as_practica_ballington",
+   "subject": "AS Practica",
+   "teachers": [
+    "Ballington"
+   ],
+   "grades": [],
+   "rooms": [
+    "Modular 2"
+   ],
+   "sessions": [
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r15",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "AS Practica - Ballington - Modular 2"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r17",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "AS Practica - Ballington - Modular 2"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "as_practica_shuler",
+   "subject": "AS Practica",
+   "teachers": [
+    "Shuler"
+   ],
+   "grades": [],
+   "rooms": [
+    "Modular 2"
+   ],
+   "sessions": [
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r143",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "AS Practica - Shuler - Modular 2"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r147",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "AS Practica - Shuler - Modular 2"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "chorale_kelly",
+   "subject": "Chorale",
+   "teachers": [
+    "Kelly"
+   ],
+   "grades": [],
+   "rooms": [
+    "Commons"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r124",
+     "room": "Commons",
+     "time": "2:25-3:15",
+     "raw": "Chorale - Kelly - Commons"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r129",
+     "room": "Commons",
+     "time": "2:25-3:15",
+     "raw": "Chorale - Kelly - Commons"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "ef_practica_ballington",
+   "subject": "EF Practica",
+   "teachers": [
+    "Ballington"
+   ],
+   "grades": [],
+   "rooms": [
+    "Modular 2"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r14",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "EF Practica - Ballington - Modular 2"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r16",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "EF Practica - Ballington - Modular 2"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "ef_practica_shuler",
+   "subject": "EF Practica",
+   "teachers": [
+    "Shuler"
+   ],
+   "grades": [],
+   "rooms": [
+    "Modular 2"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r142",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "EF Practica - Shuler - Modular 2"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [],
+     "grade_group": "all",
+     "paired_with": [],
+     "session_id": "r146",
+     "room": "Modular 2",
+     "time": "2:25-3:15",
+     "raw": "EF Practica - Shuler - Modular 2"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "7a_study_tbd",
+   "subject": "7A Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "7A"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 35,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "7a_study_tbd_Tue_Period_2",
+     "room": null,
+     "time": "10:15-11:30",
+     "raw": "7A Study - TBD (35)"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_1",
+     "period_label": "Period 1",
+     "period_block": "D",
+     "period_minutes": 25,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "7a_study_tbd_Wed_Period_1",
+     "room": null,
+     "time": "9:20-10:35",
+     "raw": "7A Study - TBD (25)"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 35,
+     "grade_rows": [
+      "7A"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "7a_study_tbd_Thu_Period_2",
+     "room": null,
+     "time": "10:15-11:30",
+     "raw": "7A Study - TBD (35)"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "7b_study_tbd",
+   "subject": "7B Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "7B"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 35,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "7b_study_tbd_Tue_Period_2",
+     "room": null,
+     "time": "10:15-11:30",
+     "raw": "7B Study - TBD (35)"
+    },
+    {
+     "day": "Wed",
+     "period_id": "Wed_Period_2",
+     "period_label": "Period 2",
+     "period_block": "E",
+     "period_minutes": 75,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "7b_study_tbd_Wed_Period_2",
+     "room": null,
+     "time": "10:45-12:00",
+     "raw": "7B Study - TBD"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 35,
+     "grade_rows": [
+      "7B"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "7b_study_tbd_Thu_Period_2",
+     "room": null,
+     "time": "10:15-11:30",
+     "raw": "7B Study - TBD (35)"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "8_latin_study_tbd",
+   "subject": "8 Latin Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "8"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 25,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "8_latin_study_tbd_Tue_Period_2",
+     "room": null,
+     "time": "10:15-11:30",
+     "raw": "8 Latin Study - TBD (25)"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "8_study_tbd",
+   "subject": "8 Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "8"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Thu",
+     "period_id": "Thu_Period_2",
+     "period_label": "Period 2",
+     "period_block": "B",
+     "period_minutes": 25,
+     "grade_rows": [
+      "8"
+     ],
+     "grade_group": "78",
+     "paired_with": [],
+     "session_id": "8_study_tbd_Thu_Period_2",
+     "room": null,
+     "time": "10:15-11:30",
+     "raw": "8 Study - TBD (25)"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "9_study_tbd",
+   "subject": "9 Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "9"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 25,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "9_study_tbd_Tue_Block_C",
+     "room": null,
+     "time": "1:05-2:20",
+     "raw": "9 Study - TBD (25)"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "9_study_tbd_Thu_Flex_C",
+     "room": null,
+     "time": "11:35-12:25",
+     "raw": "9 Study - TBD"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 25,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "9_study_tbd_Thu_Block_C",
+     "room": null,
+     "time": "1:05-2:20",
+     "raw": "9 Study - TBD (25)"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "9_language_study_tbd",
+   "subject": "9 Language Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "9"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Fri",
+     "period_id": "Fri_Period_1",
+     "period_label": "Period 1",
+     "period_block": "E",
+     "period_minutes": 25,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "9_language_study_tbd_Fri_Period_1",
+     "room": null,
+     "time": "8:50-10:05",
+     "raw": "9 Language Study - TBD (25)"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "10_study_tbd",
+   "subject": "10 Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "10"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "10_study_tbd_Tue_Flex_A",
+     "room": null,
+     "time": "11:35-12:25",
+     "raw": "10 Study - TBD"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "10"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "10_study_tbd_Thu_Flex_C",
+     "room": null,
+     "time": "11:35-12:25",
+     "raw": "10 Study - TBD"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "11_study_tbd",
+   "subject": "11 Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "11"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "11_study_tbd_Tue_Flex_A",
+     "room": null,
+     "time": "11:35-12:25",
+     "raw": "11 Study - TBD"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Flex_C",
+     "period_label": "Flex C",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "11_study_tbd_Thu_Flex_C",
+     "room": null,
+     "time": "11:35-12:25",
+     "raw": "11 Study - TBD"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  },
+  {
+   "id": "12_study_tbd",
+   "subject": "12 Study",
+   "teachers": [
+    "TBD"
+   ],
+   "grades": [
+    "12"
+   ],
+   "locked": false,
+   "rooms": [],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 75,
+     "grade_rows": [
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "12_study_tbd_Tue_Block_C",
+     "room": null,
+     "time": "1:05-2:20",
+     "raw": "12 Study - TBD"
+    }
+   ],
+   "synthesized_from": "Master Grid annotation (no Master Data row)"
+  }
+ ],
+ "non_class_slots": [
+  {
+   "day": "Mon",
+   "band": "Morning / Flex",
+   "period": "Opening",
+   "label": "Morning Meeting"
+  },
+  {
+   "day": "Mon",
+   "band": "Lunch",
+   "period": "Lunch",
+   "label": "LUNCH"
+  },
+  {
+   "day": "Tue",
+   "band": "Morning / Flex",
+   "period": "Opening",
+   "label": "Morning Meeting"
+  },
+  {
+   "day": "Tue",
+   "band": "Lunch",
+   "period": "Lunch",
+   "label": "LUNCH"
+  },
+  {
+   "day": "Wed",
+   "band": "Period 3 / Chapel",
+   "period": "Chapel",
+   "label": "Chapel"
+  },
+  {
+   "day": "Wed",
+   "band": "Lunch",
+   "period": "Lunch",
+   "label": "LUNCH"
+  },
+  {
+   "day": "Thu",
+   "band": "Morning / Flex",
+   "period": "Opening",
+   "label": "Morning Meeting"
+  },
+  {
+   "day": "Thu",
+   "band": "Lunch",
+   "period": "Lunch",
+   "label": "LUNCH"
+  },
+  {
+   "day": "Fri",
+   "band": "Morning / Flex",
+   "period": "Opening",
+   "label": "Morning Meeting"
+  },
+  {
+   "day": "Fri",
+   "band": "Period 2",
+   "period": "Flex D",
+   "label": "Club / Study Hall"
+  },
+  {
+   "day": "Fri",
+   "band": "Lunch",
+   "period": "Lunch",
+   "label": "LUNCH"
+  }
+ ],
+ "teachers": [
+  "Ballington",
+  "Bowling",
+  "Cooper",
+  "Corley",
+  "Crim",
+  "E. Marks",
+  "Edwards",
+  "Farris",
+  "Hanbury",
+  "Hobson",
+  "Hooks",
+  "Jackson",
+  "K. Marks",
+  "Kelly",
+  "Proffitt",
+  "Shuler",
+  "Stover",
+  "Sutton",
+  "Tolley",
+  "Turek"
+ ],
+ "faculty_groups": {
+  "faculty": [
+   "Bowling",
+   "Corley",
+   "E. Marks",
+   "Farris",
+   "Hanbury",
+   "Hobson",
+   "Hooks",
+   "Jackson",
+   "K. Marks",
+   "Kelly",
+   "Proffitt",
+   "Stover",
+   "Sutton",
+   "Turek"
+  ],
+  "adjunct": [
+   "Ballington",
+   "Cooper",
+   "Crim",
+   "Edwards",
+   "Shuler",
+   "Tolley"
+  ]
+ },
+ "grade_rows": [
+  "7A",
+  "7B",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12"
+ ]
+};
+
+/* ---------- data ---------- */
+const DAYS=S.days;
+const TEACHING=/^(Period|Block|Practica|Flex|PRAC)/;
+const NONTEACH=/^(Opening|Lunch|Chapel|Morning)/;
+function toMin(s){let[h,m]=s.split(':').map(Number);if(h<=7)h+=12;return h*60+m;}
+const slots=S.period_slots.map(p=>{const[a,b]=p.time.split('-');return{...p,start:toMin(a),end:toMin(b)};});
+const slotById=Object.fromEntries(slots.map(s=>[s.id,s]));
+function dayCols(day){return slots.filter(s=>s.day===day).sort((a,b)=>a.start-b.start||a.label.localeCompare(b.label));}
+function dayTeachingCols(day,gg){return dayCols(day).filter(s=>TEACHING.test(s.label)&&(!gg||s.grade_group==='all'||s.grade_group===gg));}
+
+const NONBOOK=new Set(S.non_bookable_rooms||[]);
+function atom(r){return r?String(r).split('/'):[];}
+function roomSort(a,b){const na=/^\d/.test(a),nb=/^\d/.test(b);if(na&&!nb)return -1;if(!na&&nb)return 1;return na?(+a)-(+b):a.localeCompare(b);}
+const ATOMIC_ROOMS=[...new Set(S.rooms.flatMap(atom))].filter(r=>!NONBOOK.has(r)).sort(roomSort);
+const FACULTY=new Set(S.faculty_groups.faculty);
+// Faculty first (alpha), adjunct grouped at the bottom (alpha).
+const TEACHERS=S.teachers.slice().sort((a,b)=>{
+  const fa=FACULTY.has(a),fb=FACULTY.has(b);
+  if(fa!==fb)return fa?-1:1;
+  return a.localeCompare(b);
+});
+const GRADES=S.grade_rows;
+function gg(g){return(g==='7A'||g==='7B'||g==='8')?'7-8':'9-12';}
+
+const SESSIONS=[];
+S.classes.forEach(c=>c.sessions.forEach(ss=>{const sl=slotById[ss.period_id]||{};
+  SESSIONS.push({subject:c.subject,teachers:c.teachers,grades:c.grades,room:ss.room,day:ss.day,
+    period_id:ss.period_id,label:ss.period_label,minutes:ss.period_minutes,start:sl.start??null,end:sl.end??null});}));
+function sessFor(kind,key){
+  if(kind==='teacher')return SESSIONS.filter(s=>s.teachers.includes(key));
+  if(kind==='room')return SESSIONS.filter(s=>atom(s.room).includes(key));
+  return SESSIONS.filter(s=>s.grades.includes(key));}
+function overlaps(aS,aE,bS,bE){return aS!=null&&bS!=null&&aS<bE&&bS<aE;}
+
+/* ---------- colors ---------- */
+const GC={'7A':'--g7a','7B':'--g7b','8':'--g8','9':'--g9','10':'--g10','11':'--g11','12':'--g12'};
+function gradeStyle(grades){
+  const g=grades.filter(x=>!/^flex/.test(x));
+  if(g.length===1&&GC[g[0]])return{bg:`var(${GC[g[0]]})`};
+  const s=new Set(g);
+  if(s.size===2&&s.has('7A')&&s.has('7B'))return{bg:'var(--gC7)'};
+  const cols=g.map(x=>GC[x]?`var(${GC[x]})`:'var(--gmulti)');
+  const a=cols[0]||'var(--gmulti)',b=cols[1]||a;
+  return{bg:`linear-gradient(107deg,${a} 0 54%,${b} 54% 100%)`};
+}
+
+/* ---------- cell ---------- */
+function cellInner(kind,key,slot){
+  const mine=sessFor(kind,key).filter(s=>s.day===slot.day&&s.period_id===slot.id);
+  if(mine.length){
+    return mine.map(s=>{
+      const st=gradeStyle(s.grades);
+      const room=(kind!=='room'&&s.room)?`<span class="rm">${esc(s.room)}</span>`:'';
+      const who=(kind==='room'||kind==='grade')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
+      return `<div class="blkc cls-w" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${who?`<span class="sub2">${esc(who)}</span>`:''}${room}</div>`;
+    }).join('');
+  }
+  if(NONTEACH.test(slot.label))return `<div class="blkc"><span class="nm">${esc(slot.label)}</span></div>`;
+  const busyElse=sessFor(kind,key).some(s=>s.day===slot.day&&s.period_id!==slot.id&&overlaps(s.start,s.end,slot.start,slot.end));
+  if(busyElse)return `<div class="blkc"></div>`;
+  const lbl=kind==='teacher'?'Planning':kind==='room'?'Open':'Study';
+  return `<div class="blkc"><span class="nm">${lbl}</span></div>`;
+}
+function cellClass(kind,key,slot){
+  const mine=sessFor(kind,key).filter(s=>s.day===slot.day&&s.period_id===slot.id);
+  if(mine.length)return 'cell';
+  if(NONTEACH.test(slot.label))return 'cell non';
+  const busyElse=sessFor(kind,key).some(s=>s.day===slot.day&&s.period_id!==slot.id&&overlaps(s.start,s.end,slot.start,slot.end));
+  if(busyElse)return 'cell void';
+  return kind==='teacher'?'cell plan':'cell open';
+}
+
+/* ---------- state ---------- */
+const state={view:'teacher',day:DAYS[0],filter:'',only:new Set(),showPanel:false,
+  admin:false,adminUnlocked:false,find:{day:DAYS[0],period:null}};
+function entities(v){return v==='teacher'?TEACHERS:v==='room'?ATOMIC_ROOMS:GRADES;}
+function focused(){return state.only.size>0;}
+function shown(){
+  let list=entities(state.view);
+  if(focused())list=list.filter(e=>state.only.has(e));
+  const f=state.filter.trim().toLowerCase();
+  if(f)list=list.filter(e=>e.toLowerCase().includes(f));
+  return list;
+}
+/* focused (subset) comparison drops non-teaching columns; full grid keeps them */
+function colsForDay(day){const c=dayCols(day);return focused()?c.filter(s=>!NONTEACH.test(s.label)):c;}
+
+function rowMeta(kind,key){
+  if(kind==='teacher'){const cs=sessFor('teacher',key);return `${cs.length}× · ${cs.reduce((a,s)=>a+(s.minutes||0),0)}m`;}
+  if(kind==='room'){const t=[...new Set(SESSIONS.filter(s=>atom(s.room).includes(key)).flatMap(s=>s.teachers).filter(x=>x!=='TBD'))];return t.slice(0,2).join(', ');}
+  return `Grade ${key}`;
+}
+
+/* ---------- matrix ---------- */
+function renderMatrix(){
+  const kind=state.view,keys=shown(),cols=colsForDay(state.day);
+  let head='<tr><th class="corner">'+({teacher:'Teacher',room:'Room',grade:'Grade'}[kind])+'</th>';
+  cols.forEach(c=>{const blk=c.block?`<span class="blk">${c.block}</span>`:'';const ggt=c.grade_group!=='all'?`<span class="ph-gg">${c.grade_group}</span>`:'';
+    head+=`<th><div class="ph-lab">${blk}${c.label}${ggt}</div><div class="ph-time">${c.time} · ${c.minutes}m</div></th>`;});
+  head+='</tr>';
+  let body='';
+  keys.forEach(k=>{
+    const pin=state.only.has(k)?' pinned':'';
+    let row=`<th class="rowhead${pin}" data-e="${esc(k)}"><div class="rn">${esc(k)}</div><span class="rm">${esc(rowMeta(kind,k))}</span></th>`;
+    cols.forEach(c=>{row+=`<td class="${cellClass(kind,k,c)}">${cellInner(kind,k,c)}</td>`;});
+    body+=`<tr>${row}</tr>`;
+  });
+  const admin=(state.admin&&typeof renderAdmin==='function')?renderAdmin(kind):'';
+  document.getElementById('main').innerHTML=admin+`<div class="gridcard"><table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  document.querySelectorAll('th.rowhead').forEach(th=>th.onclick=()=>{toggleOnly(th.dataset.e);});
+}
+
+function toggleOnly(e){state.only.has(e)?state.only.delete(e):state.only.add(e);renderControls();renderMain();}
+
+/* ---------- week view (full week per entity) ---------- */
+function renderWeek(){
+  const kind=state.view,keys=shown();
+  const admin=(state.admin&&typeof renderAdmin==='function')?renderAdmin(kind):'';
+  if(!keys.length){document.getElementById('main').innerHTML=admin+`<div class="hint">Nothing to show — adjust your filter or selection.</div>`;return;}
+  const cards=keys.map(k=>{
+    const g2=kind==='grade'?gg(k):null;
+    const cols=DAYS.map(day=>{
+      const cells=dayTeachingCols(day,g2).map(sl=>
+        `<div class="wk-cell ${cellClass(kind,k,sl)}"><div class="wt">${sl.label} · ${sl.time}</div>${cellInner(kind,k,sl)}</div>`).join('');
+      return `<div class="wk-daycol"><div class="wk-dayh">${day}</div>${cells}</div>`;
+    }).join('');
+    return `<section class="wk-card"><div class="wk-head"><span class="wk-name">${esc(k)}</span><span class="wk-meta">${esc(rowMeta(kind,k))}</span></div><div class="wk-week">${cols}</div></section>`;
+  }).join('');
+  document.getElementById('main').innerHTML=admin+`<div class="wk-cards">${cards}</div>`;
+}
+
+/* ---------- controls ---------- */
+function renderControls(){
+  const c=document.getElementById('controls'),lg=document.getElementById('legend');
+  if(state.view==='find'){c.style.display='none';lg.style.display='none';return;}
+  c.style.display='';lg.style.display='';
+  const dopts=DAYS.concat(['Week']);
+  document.getElementById('days').innerHTML=dopts.map(d=>`<button class="day-pill ${d===state.day?'active':''}${d==='Week'?' wk':''}" data-d="${d}">${d==='Week'?'▦ Week':d}</button>`).join('');
+  document.getElementById('days').querySelectorAll('.day-pill').forEach(b=>b.onclick=()=>{state.day=b.dataset.d;renderControls();renderMain();});
+  const total=entities(state.view).length,vis=shown().length,noun=state.view==='teacher'?'teachers':state.view==='room'?'rooms':'grades';
+  document.getElementById('count').textContent=focused()?`${vis} selected`:`${vis} of ${total} ${noun}`;
+  document.getElementById('clearF').style.display=(state.filter||focused())?'':'none';
+  document.getElementById('onlyBtn').classList.toggle('on',focused());
+  renderOnlyPanel();
+  const legend=[['7A','var(--g7a)'],['7B','var(--g7b)'],['Comb. 7','var(--gC7)'],['8','var(--g8)'],['9','var(--g9)'],
+    ['10','var(--g10)'],['11','var(--g11)'],['12','var(--g12)'],['Multigrade','linear-gradient(107deg,var(--g8) 0 54%,var(--g9) 54%)'],
+    ['Planning','var(--plan)'],['Open / Study','var(--open)']];
+  lg.innerHTML=legend.map(([n,c])=>`<span class="lg"><span class="sw" style="background:${c};${n==='Open / Study'?'border:1px dashed var(--line)':''}"></span>${n}</span>`).join('');
+}
+function renderOnlyPanel(){
+  const p=document.getElementById('onlyPanel');p.style.display=state.showPanel?'flex':'none';
+  if(!state.showPanel)return;
+  const list=entities(state.view);
+  p.innerHTML=`<div class="oh"><button data-a="all">Select all</button><button data-a="clear">Clear</button></div>
+    <div class="only-list">${list.map(e=>`<label class="oitem"><input type="checkbox" data-o="${esc(e)}" ${state.only.has(e)?'checked':''}><span>${esc(e)}</span></label>`).join('')}</div>`;
+  p.querySelectorAll('[data-o]').forEach(cb=>cb.onchange=()=>{cb.checked?state.only.add(cb.dataset.o):state.only.delete(cb.dataset.o);renderControls();renderMain();});
+  p.querySelector('[data-a="all"]').onclick=()=>{list.forEach(e=>state.only.add(e));renderControls();renderMain();};
+  p.querySelector('[data-a="clear"]').onclick=()=>{state.only.clear();renderControls();renderMain();};
+}
+
+/* ---------- Find Open ---------- */
+function roomOccupant(room,day,st,en){return SESSIONS.find(s=>s.day===day&&overlaps(s.start,s.end,st,en)&&atom(s.room).includes(room));}
+function teacherOccupant(t,day,st,en){return SESSIONS.find(s=>s.day===day&&overlaps(s.start,s.end,st,en)&&s.teachers.includes(t));}
+function renderFind(){
+  const f=state.find,opts=dayTeachingCols(f.day,null);
+  if(!opts.find(o=>o.id===f.period))f.period=opts.length?opts[0].id:null;
+  const sl=slotById[f.period];
+  const dayPills=DAYS.map(d=>`<button class="fd-day ${d===f.day?'on':''}" data-fd="${d}">${d}</button>`).join('');
+  const perPills=opts.map(o=>`<button class="fd-per ${o.id===f.period?'on':''}" data-fp="${o.id}"><b>${o.label}</b><span>${o.time}${o.grade_group!=='all'?' · '+o.grade_group:''}</span></button>`).join('');
+  let board='';
+  if(sl){
+    const openR=ATOMIC_ROOMS.filter(r=>!roomOccupant(r,sl.day,sl.start,sl.end));
+    // Find Open covers faculty only — adjuncts aren't part of the coverage pool.
+    const faculty=TEACHERS.filter(t=>FACULTY.has(t));
+    const freeN=faculty.filter(t=>!teacherOccupant(t,sl.day,sl.start,sl.end)).length;
+    const roomTiles=ATOMIC_ROOMS.map(r=>{
+      const o=roomOccupant(r,sl.day,sl.start,sl.end);
+      if(!o)return `<div class="tile r-open"><span class="tl-h">${r}</span><span class="tl-s">Open</span></div>`;
+      return `<div class="tile r-busy"><span class="tl-h">${r}</span><span class="tl-c">${esc(o.subject)}</span><span class="tl-w">${esc(o.teachers.filter(t=>t!=='TBD').join(', '))}</span></div>`;
+    }).join('');
+    const teachTiles=faculty.map(t=>{
+      const o=teacherOccupant(t,sl.day,sl.start,sl.end);
+      if(!o)return `<div class="tile t-free"><span class="tl-h">${t}</span><span class="tl-s">Free</span></div>`;
+      return `<div class="tile t-busy"><span class="tl-h">${t}</span><span class="tl-c">${esc(o.subject)}${o.room?' · '+esc(o.room):''}</span></div>`;
+    }).join('');
+    board=`
+      <div class="fd-summary"><span class="fd-when">${sl.label} · ${sl.time}</span>
+        <span class="fd-stat"><b>${openR.length}</b> of ${ATOMIC_ROOMS.length} rooms open</span>
+        <span class="fd-stat"><b>${freeN}</b> of ${faculty.length} faculty free</span></div>
+      <div class="fd-section"><h3>Rooms</h3><div class="tilegrid">${roomTiles}</div></div>
+      <div class="fd-section"><h3>Faculty</h3><div class="tilegrid">${teachTiles}</div></div>
+      <p class="desc" style="margin-top:14px">Availability is by <b>time overlap</b>, so concurrent Practica / Block C periods are exact. Commons and roomless Study slots aren't counted as bookable rooms. To cover an absent teacher, pick their class's period — every <b>Free</b> teacher is a candidate.</p>`;
+  }
+  document.getElementById('main').innerHTML=`
+    <div class="avail fd"><div class="fd-head"><h2>Find Open</h2><div class="fd-days">${dayPills}</div></div>
+      <div class="fd-pers">${perPills}</div>${board}</div>`;
+  document.querySelectorAll('[data-fd]').forEach(b=>b.onclick=()=>{f.day=b.dataset.fd;f.period=null;renderMain();});
+  document.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>{f.period=b.dataset.fp;renderMain();});
+}
+
+/* ---------- browser Print pages (B&W) ---------- */
+function buildPrint(){
+  if(state.view==='find'){document.getElementById('printRoot').innerHTML='';return;}
+  const kind=state.view,keys=shown();
+  const pages=keys.map(k=>{
+    const g2=kind==='grade'?gg(k):null;
+    const week=DAYS.map(day=>{
+      const cells=dayTeachingCols(day,g2).map(sl=>{
+        const mine=sessFor(kind,k).filter(s=>s.day===day&&s.period_id===sl.id);
+        if(mine.length)return mine.map(s=>{const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
+          const rm=(kind!=='room'&&s.room)?` · Rm ${esc(s.room)}`:'';
+          return `<div class="pp-cell"><div class="pt">${sl.label} · ${sl.time}</div><div class="pc">${esc(s.subject)}</div>${who||rm?`<div class="pr">${esc(who)}${rm}</div>`:''}</div>`;}).join('');
+        const busyElse=sessFor(kind,k).some(s=>s.day===day&&s.period_id!==sl.id&&overlaps(s.start,s.end,sl.start,sl.end));
+        if(busyElse)return '';
+        return `<div class="pp-cell pl"><div class="pt">${sl.label} · ${sl.time}</div><div class="pc">${kind==='teacher'?'Planning':kind==='room'?'Open':'Study'}</div></div>`;
+      }).join('');
+      return `<div class="pp-day"><h4>${day}</h4>${cells}</div>`;
+    }).join('');
+    return `<div class="pp"><div class="pp-head"><span class="pn">${esc(k)}</span><span class="pm">${esc(rowMeta(kind,k))} · Faculty Schedule Viewer · ${S.version}</span></div><div class="pp-week">${week}</div></div>`;
+  }).join('');
+  document.getElementById('printRoot').innerHTML=pages;
+}
+function doBrowserPrint(){buildPrint();setTimeout(()=>window.print(),30);}
+
+/* ---------- true landscape B&W PDF (no library, no dialog) ---------- */
+function pdfEsc(t){return String(t).normalize('NFKD').replace(/[^\x20-\x7E]/g,'').replace(/\\/g,'\\\\').replace(/([()])/g,'\\$1');}
+function entityPageContent(kind,key){
+  const PW=792,PH=612,M=36,gap=10,ncol=5,colW=(PW-2*M-(ncol-1)*gap)/ncol;
+  const ops=['0 g 0 G 0.6 w'];
+  const text=(x,topY,size,bold,t,gray)=>ops.push(`${gray!=null?gray:0} g BT /${bold?'F2':'F1'} ${size} Tf ${x.toFixed(1)} ${(PH-topY-size).toFixed(1)} Td (${pdfEsc(t)}) Tj ET 0 g`);
+  const rect=(x,topY,w,h)=>ops.push(`${x.toFixed(1)} ${(PH-topY-h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re S`);
+  const line=(x1,y1,x2,y2)=>ops.push(`${x1.toFixed(1)} ${(PH-y1).toFixed(1)} m ${x2.toFixed(1)} ${(PH-y2).toFixed(1)} l S`);
+  const wrap=(t,size,w,maxL)=>{const max=Math.max(6,Math.floor(w/(size*0.52)));const words=String(t).split(' ');const L=[];let cur='';
+    words.forEach(wd=>{const tc=cur?cur+' '+wd:wd;if(tc.length<=max)cur=tc;else{if(cur)L.push(cur);cur=wd;}});if(cur)L.push(cur);
+    if(L.length>maxL){L.length=maxL;L[maxL-1]=L[maxL-1].slice(0,max-2)+'..';}return L;};
+  // Header: name only (left) + faint branding (right). Rule sits below with clear space.
+  text(M,M,16,true,key);
+  const brand='Faculty Schedule Viewer  '+S.version;
+  text(PW-M-brand.length*4.4,M+3,8.5,false,brand,0.45);
+  line(M,M+25,PW-M,M+25);
+  const g2=kind==='grade'?gg(key):null,top0=M+40;
+  DAYS.forEach((day,ci)=>{
+    const x=M+ci*(colW+gap);let y=top0;
+    text(x,y,10,true,day);y+=6;line(x,y,x+colW,y);y+=10;
+    dayTeachingCols(day,g2).forEach(sl=>{
+      const mine=sessFor(kind,key).filter(s=>s.day===day&&s.period_id===sl.id);
+      if(mine.length){
+        const s=mine[0];
+        const nameL=wrap(s.subject,10,colW-10,2);
+        const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
+        const sub=[who,(kind!=='room'&&s.room)?('Rm '+s.room):''].filter(Boolean).join('   ');
+        const h=6+9+nameL.length*11+(sub?10:0)+10;
+        rect(x,y,colW,h);
+        text(x+5,y+4,6.5,false,sl.label+'  '+sl.time,0.45);
+        nameL.forEach((ln,i)=>text(x+5,y+4+9+i*11,10,true,ln));
+        if(sub)text(x+5,y+4+9+nameL.length*11,8,false,sub,0.25);
+        y+=h+6;
+      }else{
+        const busyElse=sessFor(kind,key).some(s=>s.day===day&&s.period_id!==sl.id&&overlaps(s.start,s.end,sl.start,sl.end));
+        if(busyElse)return;
+        const h=6+9+11+11;rect(x,y,colW,h);
+        text(x+5,y+4,6.5,false,sl.label+'  '+sl.time,0.5);
+        text(x+5,y+4+11,9,false,kind==='teacher'?'Planning':kind==='room'?'Open':'Study',0.55);
+        y+=h+6;
+      }
+    });
+  });
+  return ops.join('\n');
+}
+function buildPDF(pages){
+  const parts=[];let pos=0;const off={};
+  const push=s=>{parts.push(s);pos+=s.length;};
+  const start=n=>{off[n]=pos;};
+  push('%PDF-1.4\n');
+  start(1);push('1 0 obj\n<</Type/Catalog/Pages 2 0 R>>\nendobj\n');
+  const kids=pages.map((_,i)=>`${6+2*i} 0 R`).join(' ');
+  start(2);push(`2 0 obj\n<</Type/Pages/Kids[${kids}]/Count ${pages.length}>>\nendobj\n`);
+  start(3);push('3 0 obj\n<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>\nendobj\n');
+  start(4);push('4 0 obj\n<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>\nendobj\n');
+  pages.forEach((cs,i)=>{const cn=5+2*i,pn=6+2*i;
+    start(cn);push(`${cn} 0 obj\n<</Length ${cs.length}>>\nstream\n${cs}\nendstream\nendobj\n`);
+    start(pn);push(`${pn} 0 obj\n<</Type/Page/Parent 2 0 R/MediaBox[0 0 792 612]/Resources<</Font<</F1 3 0 R/F2 4 0 R>>>>/Contents ${cn} 0 R>>\nendobj\n`);});
+  const xrefPos=pos,size=5+2*pages.length;
+  let xref='xref\n0 '+size+'\n0000000000 65535 f \n';
+  for(let n=1;n<size;n++)xref+=String(off[n]).padStart(10,'0')+' 00000 n \n';
+  push(xref);push(`trailer\n<</Size ${size}/Root 1 0 R>>\nstartxref\n${xrefPos}\n%%EOF`);
+  return parts.join('');
+}
+function downloadPDF(){
+  if(state.view==='find')return alert('Switch to Teacher, Room, or Grade to export a PDF.');
+  const kind=state.view,keys=shown();
+  if(!keys.length)return alert('No '+kind+'s to export — adjust your filter.');
+  const pdf=buildPDF(keys.map(k=>entityPageContent(kind,k)));
+  const blob=new Blob([pdf],{type:'application/pdf'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');
+  const label=focused()?keys.length+' '+kind+'s':({teacher:'Teachers',room:'Rooms',grade:'Grades'}[kind]);
+  a.href=url;a.download=`Faculty Schedule - ${label} - ${S.version}.pdf`;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+/* ---------- shell ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function renderMain(){if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
+document.getElementById('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;
+  state.view=b.dataset.view;state.only.clear();state.showPanel=false;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));renderControls();renderMain();};
+document.getElementById('filter').oninput=e=>{state.filter=e.target.value;renderControls();renderMain();};
+document.getElementById('clearF').onclick=()=>{state.filter='';state.only.clear();document.getElementById('filter').value='';renderControls();renderMain();};
+document.getElementById('onlyBtn').onclick=()=>{state.showPanel=!state.showPanel;renderOnlyPanel();};
+document.addEventListener('click',e=>{if(!e.target.closest('.only-wrap')&&state.showPanel){state.showPanel=false;renderOnlyPanel();}});
+document.getElementById('printBtn').onclick=doBrowserPrint;
+document.getElementById('pdfBtn').onclick=downloadPDF;
+document.getElementById('ver').textContent=S.version;
+
+renderControls();renderMain();
+</script>
+</body>
+</html>
