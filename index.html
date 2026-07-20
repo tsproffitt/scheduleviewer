@@ -5177,44 +5177,73 @@ function doBrowserPrint(){buildPrint();setTimeout(()=>window.print(),30);}
 /* ---------- true landscape B&W PDF (no library, no dialog) ---------- */
 function pdfEsc(t){return String(t).normalize('NFKD').replace(/[^\x20-\x7E]/g,'').replace(/\\/g,'\\\\').replace(/([()])/g,'\\$1');}
 function entityPageContent(kind,key){
-  const PW=792,PH=612,M=36,gap=10,ncol=5,colW=(PW-2*M-(ncol-1)*gap)/ncol;
+  // Full-page, time-proportional weekly calendar: classes sit at their real
+  // clock position on an hour grid, so the page fills top-to-bottom and days
+  // line up by time. B&W, dark ink so it prints crisply.
+  const PW=792,PH=612,M=36;
   const ops=['0 g 0 G 0.6 w'];
   const text=(x,topY,size,bold,t,gray)=>ops.push(`${gray!=null?gray:0} g BT /${bold?'F2':'F1'} ${size} Tf ${x.toFixed(1)} ${(PH-topY-size).toFixed(1)} Td (${pdfEsc(t)}) Tj ET 0 g`);
-  const rect=(x,topY,w,h)=>ops.push(`${x.toFixed(1)} ${(PH-topY-h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re S`);
-  const line=(x1,y1,x2,y2)=>ops.push(`${x1.toFixed(1)} ${(PH-y1).toFixed(1)} m ${x2.toFixed(1)} ${(PH-y2).toFixed(1)} l S`);
-  const wrap=(t,size,w,maxL)=>{const max=Math.max(6,Math.floor(w/(size*0.52)));const words=String(t).split(' ');const L=[];let cur='';
+  const ctext=(cx,topY,size,bold,t,gray)=>text(cx-(String(t).length*size*0.27),topY,size,bold,t,gray); // ~centered
+  const rect=(x,topY,w,h,g,lw)=>ops.push(`${lw||0.6} w ${g!=null?g:0} G ${x.toFixed(1)} ${(PH-topY-h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re S 0 G 0.6 w`);
+  const hline=(x1,x2,yy,g,lw)=>ops.push(`${lw||0.4} w ${g} G ${x1.toFixed(1)} ${(PH-yy).toFixed(1)} m ${x2.toFixed(1)} ${(PH-yy).toFixed(1)} l S 0 G 0.6 w`);
+  const vline=(xx,y1,y2,g,lw)=>ops.push(`${lw||0.4} w ${g} G ${xx.toFixed(1)} ${(PH-y1).toFixed(1)} m ${xx.toFixed(1)} ${(PH-y2).toFixed(1)} l S 0 G 0.6 w`);
+  const wrap=(t,size,w,maxL)=>{const max=Math.max(5,Math.floor(w/(size*0.5)));const words=String(t).split(' ');const L=[];let cur='';
     words.forEach(wd=>{const tc=cur?cur+' '+wd:wd;if(tc.length<=max)cur=tc;else{if(cur)L.push(cur);cur=wd;}});if(cur)L.push(cur);
-    if(L.length>maxL){L.length=maxL;L[maxL-1]=L[maxL-1].slice(0,max-2)+'..';}return L;};
-  // Header: name only (left) + faint branding (right). Rule sits below with clear space.
+    if(L.length>maxL){L.length=maxL;L[maxL-1]=L[maxL-1].slice(0,max-1)+'…';}return L;};
+
+  // header
   text(M,M,16,true,key);
-  const brand='Faculty Schedule Viewer  '+S.version;
-  text(PW-M-brand.length*4.4,M+3,8.5,false,brand,0.45);
-  line(M,M+25,PW-M,M+25);
-  const g2=kind==='grade'?gg(key):null,top0=M+40;
+  const brand='Faculty Schedule Viewer   '+S.version;
+  text(PW-M-brand.length*4.3,M+3,8.5,false,brand,0.4);
+  hline(M,PW-M,M+25,0,0.8);
+
+  // time grid geometry
+  const teach=slots.filter(s=>TEACHING.test(s.label));
+  const dayStart=Math.min(...teach.map(s=>s.start)), dayEnd=Math.max(...teach.map(s=>s.end));
+  const gutter=26, gridL=M+gutter, gridR=PW-M, colW=(gridR-gridL)/5;
+  const gridTop=M+56, gridBot=PH-M-6, scale=(gridBot-gridTop)/(dayEnd-dayStart);
+  const yFor=m=>gridTop+(m-dayStart)*scale;
+
+  // day headers
+  DAYS.forEach((d,ci)=>ctext(gridL+ci*colW+colW/2, M+40, 11, true, d));
+
+  // hour lines + gutter labels
+  for(let hm=Math.ceil(dayStart/60)*60; hm<=dayEnd; hm+=60){
+    const yy=yFor(hm); hline(gridL,gridR,yy,0.82,0.35);
+    const h12=((Math.floor(hm/60)+11)%12)+1;
+    text(M+3,yy-4,7.5,false,String(h12),0.45);
+  }
+  // frame + column separators
+  rect(gridL,gridTop,gridR-gridL,gridBot-gridTop,0.55,0.8);
+  for(let ci=1;ci<5;ci++) vline(gridL+ci*colW,gridTop,gridBot,0.78,0.5);
+
+  // sessions, positioned by time
+  const g2=kind==='grade'?gg(key):null;
   DAYS.forEach((day,ci)=>{
-    const x=M+ci*(colW+gap);let y=top0;
-    text(x,y,10,true,day);y+=6;line(x,y,x+colW,y);y+=10;
-    dayTeachingCols(day,g2).forEach(sl=>{
-      const mine=sessFor(kind,key).filter(s=>s.day===day&&s.period_id===sl.id);
-      if(mine.length){
-        const s=mine[0];
-        const nameL=wrap(s.subject,10,colW-10,2);
-        const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
-        const sub=[who,(kind!=='room'&&s.room)?('Rm '+s.room):''].filter(Boolean).join('   ');
-        const h=6+9+nameL.length*11+(sub?10:0)+10;
-        rect(x,y,colW,h);
-        text(x+5,y+4,6.5,false,sl.label+'  '+sl.time,0.45);
-        nameL.forEach((ln,i)=>text(x+5,y+4+9+i*11,10,true,ln));
-        if(sub)text(x+5,y+4+9+nameL.length*11,8,false,sub,0.25);
-        y+=h+6;
-      }else{
-        const busyElse=sessFor(kind,key).some(s=>s.day===day&&s.period_id!==sl.id&&overlaps(s.start,s.end,sl.start,sl.end));
-        if(busyElse)return;
-        const h=6+9+11+11;rect(x,y,colW,h);
-        text(x+5,y+4,6.5,false,sl.label+'  '+sl.time,0.5);
-        text(x+5,y+4+11,9,false,kind==='teacher'?'Planning':kind==='room'?'Open':'Study',0.55);
-        y+=h+6;
-      }
+    const colX=gridL+ci*colW;
+    const busy=sessFor(kind,key).filter(s=>s.day===day&&s.start!=null);
+    busy.forEach(s=>{
+      const y0=yFor(s.start), h=Math.max(16,(s.end-s.start)*scale);
+      const bx=colX+2, bw=colW-4;
+      rect(bx,y0+1.5,bw,h-3,0,0.7);
+      const sl0=slotById[s.period_id]||{};
+      text(bx+4,y0+5,6.5,false,(sl0.label||s.label)+'  '+(sl0.time||''),0.4);
+      const nameL=wrap(s.subject,9.5,bw-8,h>=44?2:1);
+      nameL.forEach((ln,i)=>text(bx+4,y0+5+8.5+i*10,9.5,true,ln));
+      const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
+      const sub=[who,(kind!=='room'&&s.room)?('Rm '+s.room):''].filter(Boolean).join('   ');
+      if(sub && h>=40) text(bx+4,y0+5+8.5+nameL.length*10,7.5,false,sub,0.22);
+    });
+    // free teaching periods (deduped so concurrent Practica/Block C don't stack)
+    let lastFree=-1;
+    dayTeachingCols(day,g2).slice().sort((a,b)=>a.start-b.start).forEach(sl=>{
+      if(busy.some(s=>overlaps(s.start,s.end,sl.start,sl.end))) return;
+      if(sl.start<lastFree) return; lastFree=sl.end;
+      const y0=yFor(sl.start), h=Math.max(15,(sl.end-sl.start)*scale);
+      const bx=colX+2, bw=colW-4;
+      rect(bx,y0+1.5,bw,h-3,0.62,0.5);
+      text(bx+4,y0+5,6.5,false,sl.label+'  '+sl.time,0.5);
+      text(bx+4,y0+5+9,8.5,false,kind==='teacher'?'Planning':kind==='room'?'Open':'Study',0.5);
     });
   });
   return ops.join('\n');
