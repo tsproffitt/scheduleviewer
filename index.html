@@ -178,6 +178,26 @@
   .tile.t-busy .tl-c{color:var(--faint)}
   .tile.adj .tl-h::after{content:" · adj";font-size:9px;color:var(--faint);font-weight:600;letter-spacing:0}
 
+  /* ---- Now dashboard (landing) ---- */
+  .now{padding-top:2px}
+  .now-hero{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;padding:4px 2px 18px}
+  .nh-clock{font-size:30px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+  .nh-status{font-size:15px;color:var(--muted);font-weight:600}
+  .nh-status b{color:var(--accent)}
+  .now-grid{display:grid;grid-template-columns:2fr 1fr;grid-auto-rows:min-content;gap:16px;align-items:start}
+  @media(max-width:860px){.now-grid{grid-template-columns:1fr}}
+  .now-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+  .now-panel.span{grid-row:span 2}
+  @media(max-width:860px){.now-panel.span{grid-row:auto}}
+  .now-panel h3{font-size:11.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:12px 15px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;margin:0}
+  .now-panel h3 span{color:var(--ink);font-weight:800}
+  .now-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(184px,1fr));gap:9px;padding:13px}
+  .nowcard{border-radius:9px;padding:9px 11px;color:#fff;min-height:54px;display:flex;flex-direction:column;justify-content:center}
+  .nowcard .s{font-weight:750;font-size:13.5px;letter-spacing:-.1px;line-height:1.15}
+  .nowcard .m{font-size:11px;opacity:.93;margin-top:3px}
+  .now-panel .tilegrid{padding:13px}
+  .now-empty{padding:20px 15px;color:var(--faint);font-style:italic;text-align:center;font-size:12.5px}
+
   /* browser Print path = B&W landscape (the PDF button is the primary export) */
   #printRoot{display:none}
   @media print{
@@ -204,7 +224,8 @@
   <div class="topbar">
     <div class="brand">Faculty Schedule Viewer <span class="ver" id="ver"></span></div>
     <div class="tabs" id="tabs">
-      <button class="tab active" data-view="teacher">Teacher</button>
+      <button class="tab active" data-view="now">Now</button>
+      <button class="tab" data-view="teacher">Teacher</button>
       <button class="tab" data-view="room">Room</button>
       <button class="tab" data-view="grade">Grade</button>
       <button class="tab" data-view="find">Find Open</button>
@@ -3373,7 +3394,8 @@ const S = {
     "8"
    ],
    "rooms": [
-    "205"
+    "205",
+    "305"
    ],
    "sessions": [
     {
@@ -3404,9 +3426,9 @@ const S = {
      "grade_group": "78",
      "paired_with": [],
      "session_id": "r183",
-     "room": "205",
+     "room": "305",
      "time": "9:20-10:35",
-     "raw": "8 Literature - Turek - 205"
+     "raw": "8 Literature - Turek - 305"
     },
     {
      "day": "Thu",
@@ -5023,7 +5045,7 @@ function cellClass(kind,key,slot){
 }
 
 /* ---------- state ---------- */
-const state={view:'teacher',day:DAYS[0],filter:'',only:new Set(),showPanel:false,
+const state={view:'now',day:DAYS[0],filter:'',only:new Set(),showPanel:false,
   admin:false,adminUnlocked:false,find:{day:DAYS[0],period:null}};
 function entities(v){return v==='teacher'?TEACHERS:v==='room'?ATOMIC_ROOMS:GRADES;}
 function focused(){return state.only.size>0;}
@@ -5084,7 +5106,7 @@ function renderWeek(){
 /* ---------- controls ---------- */
 function renderControls(){
   const c=document.getElementById('controls'),lg=document.getElementById('legend');
-  if(state.view==='find'){c.style.display='none';lg.style.display='none';return;}
+  if(state.view==='find'||state.view==='now'){c.style.display='none';lg.style.display='none';return;}
   c.style.display='';lg.style.display='';
   const dopts=DAYS.concat(['Week']);
   document.getElementById('days').innerHTML=dopts.map(d=>`<button class="day-pill ${d===state.day?'active':''}${d==='Week'?' wk':''}" data-d="${d}">${d==='Week'?'▦ Week':d}</button>`).join('');
@@ -5152,7 +5174,7 @@ function renderFind(){
 
 /* ---------- browser Print pages (B&W) ---------- */
 function buildPrint(){
-  if(state.view==='find'){document.getElementById('printRoot').innerHTML='';return;}
+  if(state.view==='find'||state.view==='now'){document.getElementById('printRoot').innerHTML='';return;}
   const kind=state.view,keys=shown();
   const pages=keys.map(k=>{
     const g2=kind==='grade'?gg(k):null;
@@ -5268,7 +5290,7 @@ function buildPDF(pages){
   return parts.join('');
 }
 function downloadPDF(){
-  if(state.view==='find')return alert('Switch to Teacher, Room, or Grade to export a PDF.');
+  if(state.view==='find'||state.view==='now')return alert('Switch to Teacher, Room, or Grade to export a PDF.');
   const kind=state.view,keys=shown();
   if(!keys.length)return alert('No '+kind+'s to export — adjust your filter.');
   const pdf=buildPDF(keys.map(k=>entityPageContent(kind,k)));
@@ -5281,7 +5303,54 @@ function downloadPDF(){
 
 /* ---------- shell ---------- */
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
-function renderMain(){if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
+/* ---------- Now dashboard (clock-driven landing page) ---------- */
+let nowKey='';
+const TEACH_SLOTS=slots.filter(s=>TEACHING.test(s.label));
+function fmtT(m){const h=((Math.floor(m/60)+11)%12)+1;return h+':'+String(m%60).padStart(2,'0');}
+function fmtClock(d){const wd=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];let h=d.getHours();const ap=h<12?'AM':'PM';h=((h+11)%12)+1;const p=n=>String(n).padStart(2,'0');return `${wd} · ${h}:${p(d.getMinutes())}:${p(d.getSeconds())} ${ap}`;}
+function nowDT(){const d=new Date();const gi=d.getDay();return{d,dayName:(gi>=1&&gi<=5)?DAYS[gi-1]:null,t:d.getHours()*60+d.getMinutes()};}
+function sessionsAt(day,t){return SESSIONS.filter(s=>s.day===day&&s.start!=null&&s.start<=t&&t<s.end);}
+function statusFor(dayName,t){
+  if(dayName){const inS=sessionsAt(dayName,t);if(inS.length)return{mode:'now',day:dayName,t,sessions:inS};}
+  const order=d=>DAYS.indexOf(d),nowIdx=dayName?order(dayName):-1,seen=new Set(),uniq=[];
+  TEACH_SLOTS.forEach(s=>{const k=s.day+'|'+s.start;if(!seen.has(k)){seen.add(k);uniq.push({day:s.day,di:order(s.day),start:s.start});}});
+  uniq.sort((a,b)=>a.di-b.di||a.start-b.start);
+  const nx=uniq.find(c=>c.di>nowIdx||(c.di===nowIdx&&c.start>t))||uniq[0];
+  return{mode:'next',day:nx.day,t:nx.start,sessions:sessionsAt(nx.day,nx.start)};
+}
+function renderNow(st){
+  st=st||(()=>{const n=nowDT();return statusFor(n.dayName,n.t);})();
+  const {mode,day,t}=st;
+  const gi=g=>{const x=(g||[]).find(v=>GRADES.includes(v));return x?GRADES.indexOf(x):99;};
+  const inS=st.sessions.slice().sort((a,b)=>gi(a.grades)-gi(b.grades)||a.subject.localeCompare(b.subject));
+  const cards=inS.map(s=>{const g=gradeStyle(s.grades),who=s.teachers.filter(x=>x!=='TBD').join(', '),rm=s.room?(' · '+s.room):'';
+    return `<div class="nowcard" style="background:${g.bg}"><span class="s">${esc(s.subject)}</span><span class="m">${esc(who)}${rm}</span></div>`;}).join('')||'<div class="now-empty">No classes in session.</div>';
+  const busyR=new Set();inS.forEach(s=>atom(s.room).forEach(r=>busyR.add(r)));
+  const openR=ATOMIC_ROOMS.filter(r=>!busyR.has(r));
+  const busyT=new Set();inS.forEach(s=>s.teachers.forEach(x=>busyT.add(x)));
+  const faculty=TEACHERS.filter(x=>FACULTY.has(x)),freeFac=faculty.filter(x=>!busyT.has(x));
+  const cov=TEACH_SLOTS.filter(s=>s.day===day&&s.start<=t&&t<s.end);
+  const plabel=[...new Set(cov.map(c=>c.label))].join(' / ')||'—';
+  const ptime=cov.length?(fmtT(Math.min(...cov.map(c=>c.start)))+'–'+fmtT(Math.max(...cov.map(c=>c.end)))):'';
+  const status=mode==='now'?`<b>In session</b> · ${esc(plabel)} · ${ptime}`
+    :`Nothing in session right now · <b>Up next:</b> ${day} · ${esc(plabel)} at ${fmtT(t)}`;
+  document.getElementById('main').innerHTML=`
+   <div class="now">
+    <div class="now-hero"><div class="nh-clock" id="nowClock"></div><div class="nh-status">${status}</div></div>
+    <div class="now-grid">
+      <section class="now-panel span"><h3>In session <span>${inS.length}</span></h3><div class="now-cards">${cards}</div></section>
+      <section class="now-panel"><h3>Open rooms <span>${openR.length} / ${ATOMIC_ROOMS.length}</span></h3><div class="tilegrid">${openR.map(r=>`<div class="tile r-open"><span class="tl-h">${r}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>'}</div></section>
+      <section class="now-panel"><h3>Faculty on planning <span>${freeFac.length} / ${faculty.length}</span></h3><div class="tilegrid">${freeFac.map(x=>`<div class="tile t-free"><span class="tl-h">${x}</span><span class="tl-s">Planning</span></div>`).join('')||'<div class="now-empty">All faculty teaching.</div>'}</div></section>
+    </div></div>`;
+  const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(new Date());
+  nowKey=mode+'|'+day+'|'+t;
+}
+function nowTick(){
+  const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(new Date());
+  const n=nowDT(),st=statusFor(n.dayName,n.t),key=st.mode+'|'+st.day+'|'+st.t;
+  if(state.view==='now'&&key!==nowKey)renderNow(st);
+}
+function renderMain(){if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
 document.getElementById('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;
   state.view=b.dataset.view;state.only.clear();state.showPanel=false;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));renderControls();renderMain();};
@@ -5294,6 +5363,7 @@ document.getElementById('pdfBtn').onclick=downloadPDF;
 document.getElementById('ver').textContent=S.version;
 
 renderControls();renderMain();
+setInterval(nowTick,1000);
 </script>
 </body>
 </html>
