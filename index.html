@@ -4983,7 +4983,12 @@ function toMin(s){let[h,m]=s.split(':').map(Number);if(h<=7)h+=12;return h*60+m;
 const slots=S.period_slots.map(p=>{const[a,b]=p.time.split('-');return{...p,start:toMin(a),end:toMin(b)};});
 const slotById=Object.fromEntries(slots.map(s=>[s.id,s]));
 function dayCols(day){return slots.filter(s=>s.day===day).sort((a,b)=>a.start-b.start||a.label.localeCompare(b.label));}
-function dayTeachingCols(day,gg){return dayCols(day).filter(s=>TEACHING.test(s.label)&&(!gg||s.grade_group==='all'||s.grade_group===gg));}
+/* Grade-group codes differ by pipeline vintage ('78'/'912' in the Master Data
+   export, '7-8'/'9-12' in the retired v16 grid). Normalize before comparing —
+   a mismatch silently drops the 7-8 Tue/Thu afternoon columns. */
+function normGG(v){return String(v==null?'':v).replace(/[^0-9a-z]/gi,'').toLowerCase();}
+function ggLabel(v){const n=normGG(v);return n==='78'?'7–8':n==='912'?'9–12':String(v);}
+function dayTeachingCols(day,g){return dayCols(day).filter(s=>TEACHING.test(s.label)&&(!g||normGG(s.grade_group)==='all'||normGG(s.grade_group)===normGG(g)));}
 
 const NONBOOK=new Set(S.non_bookable_rooms||[]);
 function atom(r){return r?String(r).split('/'):[];}
@@ -4997,7 +5002,7 @@ const TEACHERS=S.teachers.slice().sort((a,b)=>{
   return a.localeCompare(b);
 });
 const GRADES=S.grade_rows;
-function gg(g){return(g==='7A'||g==='7B'||g==='8')?'7-8':'9-12';}
+function gg(g){return(g==='7A'||g==='7B'||g==='8')?'78':'912';}
 
 const SESSIONS=[];
 S.classes.forEach(c=>c.sessions.forEach(ss=>{const sl=slotById[ss.period_id]||{};
@@ -5072,7 +5077,7 @@ function rowMeta(kind,key){
 function renderMatrix(){
   const kind=state.view,keys=shown(),cols=colsForDay(state.day);
   let head='<tr><th class="corner">'+({teacher:'Teacher',room:'Room',grade:'Grade'}[kind])+'</th>';
-  cols.forEach(c=>{const blk=c.block?`<span class="blk">${c.block}</span>`:'';const ggt=c.grade_group!=='all'?`<span class="ph-gg">${c.grade_group}</span>`:'';
+  cols.forEach(c=>{const blk=c.block?`<span class="blk">${c.block}</span>`:'';const ggt=normGG(c.grade_group)!=='all'?`<span class="ph-gg">${ggLabel(c.grade_group)}</span>`:'';
     head+=`<th><div class="ph-lab">${blk}${c.label}${ggt}</div><div class="ph-time">${c.time} · ${c.minutes}m</div></th>`;});
   head+='</tr>';
   let body='';
@@ -5145,7 +5150,7 @@ function renderFind(){
   if(!opts.find(o=>o.id===f.period))f.period=opts.length?opts[0].id:null;
   const sl=slotById[f.period];
   const dayPills=DAYS.map(d=>`<button class="fd-day ${d===f.day?'on':''}" data-fd="${d}">${d}</button>`).join('');
-  const perPills=opts.map(o=>`<button class="fd-per ${o.id===f.period?'on':''}" data-fp="${o.id}"><b>${o.label}</b><span>${o.time}${o.grade_group!=='all'?' · '+o.grade_group:''}</span></button>`).join('');
+  const perPills=opts.map(o=>`<button class="fd-per ${o.id===f.period?'on':''}" data-fp="${o.id}"><b>${o.label}</b><span>${o.time}${normGG(o.grade_group)!=='all'?' · '+ggLabel(o.grade_group):''}</span></button>`).join('');
   let board='';
   if(sl){
     const openR=ATOMIC_ROOMS.filter(r=>!roomOccupant(r,sl.day,sl.start,sl.end));
