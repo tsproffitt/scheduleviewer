@@ -81,6 +81,12 @@
   .blkc .nm{font-weight:750;font-size:13.5px;line-height:1.15;letter-spacing:-.1px}
   .blkc .sub2{font-size:10.5px;font-weight:600;opacity:.92;margin-top:2px}
   .blkc .rm{position:absolute;right:7px;bottom:5px;font-size:9.5px;font-weight:600;opacity:.7}
+  /* sub-parts of one block (50-min class + 25-min study) stack compactly */
+  .blkc.sub{min-height:0;padding:4px 8px;margin-bottom:2px}
+  .blkc.sub:last-child{margin-bottom:0}
+  .blkc.sub .nm{font-size:12px}
+  .blkc.sub .rm{position:static;margin-left:6px;opacity:.75}
+  .blkc .pt{font-size:9.5px;font-weight:600;opacity:.8;margin-top:1px}
   .cls-w{color:#fff}
   .cell.plan .blkc{background:var(--plan);color:var(--plan-ink)}
   .cell.plan .nm{font-weight:650;font-style:italic;font-size:12.5px}
@@ -400,7 +406,7 @@ const S = {
    "row_group_start": 3
   },
   {
-   "id": "Tue_Period_2_78",
+   "id": "Tue_Period_2_78_665",
    "day": "Tue",
    "label": "Period 2",
    "block": "B",
@@ -490,7 +496,7 @@ const S = {
    "row_group_start": 2
   },
   {
-   "id": "Wed_Period_1_78",
+   "id": "Wed_Period_1_78_610",
    "day": "Wed",
    "label": "Period 1",
    "block": "D",
@@ -520,7 +526,7 @@ const S = {
    "row_group_start": 5
   },
   {
-   "id": "Wed_Period_2_78",
+   "id": "Wed_Period_2_78_695",
    "day": "Wed",
    "label": "Period 2",
    "block": "E",
@@ -590,7 +596,7 @@ const S = {
    "row_group_start": 3
   },
   {
-   "id": "Thu_Period_2_78",
+   "id": "Thu_Period_2_78_665",
    "day": "Thu",
    "label": "Period 2",
    "block": "B",
@@ -2826,7 +2832,7 @@ const S = {
    "sessions": [
     {
      "day": "Tue",
-     "period_id": "Tue_Period_2_78",
+     "period_id": "Tue_Period_2_78_665",
      "period_label": "Period 2",
      "period_block": "B",
      "period_minutes": 25,
@@ -2842,7 +2848,7 @@ const S = {
     },
     {
      "day": "Thu",
-     "period_id": "Thu_Period_2_78",
+     "period_id": "Thu_Period_2_78_665",
      "period_label": "Period 2",
      "period_block": "B",
      "period_minutes": 25,
@@ -3290,7 +3296,7 @@ const S = {
    "sessions": [
     {
      "day": "Wed",
-     "period_id": "Wed_Period_1_78",
+     "period_id": "Wed_Period_1_78_610",
      "period_label": "Period 1",
      "period_block": "D",
      "period_minutes": 25,
@@ -3498,7 +3504,7 @@ const S = {
    "sessions": [
     {
      "day": "Tue",
-     "period_id": "Tue_Period_2_78",
+     "period_id": "Tue_Period_2_78_665",
      "period_label": "Period 2",
      "period_block": "B",
      "period_minutes": 25,
@@ -3514,7 +3520,7 @@ const S = {
     },
     {
      "day": "Thu",
-     "period_id": "Thu_Period_2_78",
+     "period_id": "Thu_Period_2_78_665",
      "period_label": "Period 2",
      "period_block": "B",
      "period_minutes": 25,
@@ -3851,7 +3857,7 @@ const S = {
    "sessions": [
     {
      "day": "Wed",
-     "period_id": "Wed_Period_2_78",
+     "period_id": "Wed_Period_2_78_695",
      "period_label": "Period 2",
      "period_block": "E",
      "period_minutes": 25,
@@ -4443,7 +4449,7 @@ const S = {
    "sessions": [
     {
      "day": "Tue",
-     "period_id": "Tue_Period_2_78",
+     "period_id": "Tue_Period_2_78_665",
      "period_label": "Period 2",
      "period_block": "B",
      "period_minutes": 25,
@@ -4459,7 +4465,7 @@ const S = {
     },
     {
      "day": "Thu",
-     "period_id": "Thu_Period_2_78",
+     "period_id": "Thu_Period_2_78_665",
      "period_label": "Period 2",
      "period_block": "B",
      "period_minutes": 25,
@@ -5728,9 +5734,67 @@ const GRADES=S.grade_rows;
 function gg(g){return(g==='7A'||g==='7B'||g==='8')?'78':'912';}
 
 const SESSIONS=[];
-S.classes.forEach(c=>c.sessions.forEach(ss=>{const sl=slotById[ss.period_id]||{};
+S.classes.forEach(c=>c.sessions.forEach(ss=>{
+  const sl=slotById[ss.period_id]||{};
+  /* Position by the session's OWN time. A 50-min class and its 25-min study
+     share one parent block, so the slot window is not the session window. */
+  const tm=ss.time||sl.time||'',p=tm.split('-');
+  const st=p[0]?toMin(p[0]):(sl.start??null),en=p[1]?toMin(p[1]):(sl.end??null);
   SESSIONS.push({subject:c.subject,teachers:c.teachers,grades:c.grades,room:ss.room,day:ss.day,
-    period_id:ss.period_id,label:ss.period_label,minutes:ss.period_minutes,start:sl.start??null,end:sl.end??null});}));
+    period_id:ss.period_id,label:ss.period_label,minutes:ss.period_minutes,time:tm,start:st,end:en});}));
+
+/* ---------- canonical blocks ----------
+   One grid row per period. A block = the longest slot for a (day,label)
+   envelope plus every shorter slot fully inside it — so a 75-min block that
+   subdivides into a 50-min class + 25-min study is ONE row with both parts
+   stacked inside, instead of three "Period 2" rows at 2x height.
+   Genuinely staggered bands (Tue/Thu Block C: 9-12 1:05-2:20 vs 7-8 2:00-3:15)
+   don't contain one another, so they correctly stay separate blocks. */
+const _blkCache={};
+function blockKey(b){return b.label+'|'+b.start+'|'+b.end;}
+function dayBlocks(day){
+  if(_blkCache[day])return _blkCache[day];
+  const byLabel={};
+  slots.filter(s=>s.day===day).forEach(s=>{(byLabel[s.label]=byLabel[s.label]||[]).push(s);});
+  const out=[];
+  Object.values(byLabel).forEach(grp=>{
+    const ordered=grp.slice().sort((a,b)=>(b.end-b.start)-(a.end-a.start)||a.start-b.start);
+    const taken=new Set();
+    ordered.forEach(env=>{
+      if(taken.has(env))return;
+      taken.add(env);const members=[env];
+      ordered.forEach(o=>{if(!taken.has(o)&&o.start>=env.start&&o.end<=env.end){taken.add(o);members.push(o);}});
+      out.push({label:env.label,start:env.start,end:env.end,time:env.time,block:env.block,minutes:env.minutes,members});
+    });
+  });
+  out.sort((a,b)=>a.start-b.start||a.label.localeCompare(b.label));
+  return _blkCache[day]=out;
+}
+function blockMatchesGG(b,g){if(!g)return true;const s=new Set(b.members.map(m=>normGG(m.grade_group)));return s.has('all')||s.has(normGG(g));}
+function dayTeachingBlocks(day,g){return dayBlocks(day).filter(b=>TEACHING.test(b.label)&&blockMatchesGG(b,g));}
+/* Attach each session to its block: the TIGHTEST block that fully contains it
+   (a 50-min Practica A session sits inside both Practica A 1:05-1:55 and the
+   concurrent 9-12 Block C 1:05-2:20 — max-overlap alone ties, so prefer the
+   snuggest fit). Falls back to max overlap when nothing contains it. */
+SESSIONS.forEach(s=>{
+  if(s.start==null){s.blk=null;return;}
+  const cands=dayBlocks(s.day).filter(b=>s.start<b.end&&b.start<s.end);
+  if(!cands.length){s.blk=null;return;}
+  const inside=cands.filter(b=>s.start>=b.start&&s.end<=b.end);
+  const pool=inside.length?inside:cands;
+  let best=pool[0];
+  pool.forEach(b=>{
+    if(inside.length){ if((b.end-b.start)<(best.end-best.start))best=b; }
+    else{ const ov=Math.min(s.end,b.end)-Math.max(s.start,b.start);
+          const bov=Math.min(s.end,best.end)-Math.max(s.start,best.start);
+          if(ov>bov)best=b; }
+  });
+  s.blk=blockKey(best);
+});
+function sessionsInBlock(kind,key,day,b){
+  const k=blockKey(b);
+  return sessFor(kind,key).filter(s=>s.day===day&&s.blk===k).sort((x,y)=>x.start-y.start);
+}
 function sessFor(kind,key){
   if(kind==='teacher')return SESSIONS.filter(s=>s.teachers.includes(key));
   if(kind==='room')return SESSIONS.filter(s=>atom(s.room).includes(key));
@@ -5750,28 +5814,29 @@ function gradeStyle(grades){
 }
 
 /* ---------- cell ---------- */
-function cellInner(kind,key,slot){
-  const mine=sessFor(kind,key).filter(s=>s.day===slot.day&&s.period_id===slot.id);
+function cellInner(kind,key,b,day){
+  const mine=sessionsInBlock(kind,key,day,b);
   if(mine.length){
+    const many=mine.length>1;
     return mine.map(s=>{
       const st=gradeStyle(s.grades);
       const room=(kind!=='room'&&s.room)?`<span class="rm">${esc(s.room)}</span>`:'';
       const who=(kind==='room'||kind==='grade')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
-      return `<div class="blkc cls-w" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${who?`<span class="sub2">${esc(who)}</span>`:''}${room}</div>`;
+      /* sub-parts of one block get a time range so the split stays legible */
+      const pt=many?`<span class="pt">${fmtT(s.start)}–${fmtT(s.end)}</span>`:'';
+      return `<div class="blkc cls-w${many?' sub':''}" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${who?`<span class="sub2">${esc(who)}</span>`:''}${pt}${room}</div>`;
     }).join('');
   }
-  if(NONTEACH.test(slot.label))return `<div class="blkc"><span class="nm">${esc(slot.label)}</span></div>`;
-  const busyElse=sessFor(kind,key).some(s=>s.day===slot.day&&s.period_id!==slot.id&&overlaps(s.start,s.end,slot.start,slot.end));
+  if(NONTEACH.test(b.label))return `<div class="blkc"><span class="nm">${esc(b.label)}</span></div>`;
+  const busyElse=sessFor(kind,key).some(s=>s.day===day&&overlaps(s.start,s.end,b.start,b.end));
   if(busyElse)return `<div class="blkc"></div>`;
   const lbl=kind==='teacher'?'Planning':kind==='room'?'Open':'Study';
   return `<div class="blkc"><span class="nm">${lbl}</span></div>`;
 }
-function cellClass(kind,key,slot){
-  const mine=sessFor(kind,key).filter(s=>s.day===slot.day&&s.period_id===slot.id);
-  if(mine.length)return 'cell';
-  if(NONTEACH.test(slot.label))return 'cell non';
-  const busyElse=sessFor(kind,key).some(s=>s.day===slot.day&&s.period_id!==slot.id&&overlaps(s.start,s.end,slot.start,slot.end));
-  if(busyElse)return 'cell void';
+function cellClass(kind,key,b,day){
+  if(sessionsInBlock(kind,key,day,b).length)return 'cell';
+  if(NONTEACH.test(b.label))return 'cell non';
+  if(sessFor(kind,key).some(s=>s.day===day&&overlaps(s.start,s.end,b.start,b.end)))return 'cell void';
   return kind==='teacher'?'cell plan':'cell open';
 }
 
@@ -5788,7 +5853,7 @@ function shown(){
   return list;
 }
 /* focused (subset) comparison drops non-teaching columns; full grid keeps them */
-function colsForDay(day){const c=dayCols(day);return focused()?c.filter(s=>!NONTEACH.test(s.label)):c;}
+function colsForDay(day,g){const c=dayBlocks(day).filter(b=>blockMatchesGG(b,g));return focused()?c.filter(b=>!NONTEACH.test(b.label)):c;}
 
 function rowMeta(kind,key){
   if(kind==='teacher'){const cs=sessFor('teacher',key);return `${cs.length}× · ${cs.reduce((a,s)=>a+(s.minutes||0),0)}m`;}
@@ -5798,16 +5863,21 @@ function rowMeta(kind,key){
 
 /* ---------- matrix ---------- */
 function renderMatrix(){
-  const kind=state.view,keys=shown(),cols=colsForDay(state.day);
+  const kind=state.view,keys=shown();
+  /* one column per canonical block */
+  const cols=colsForDay(state.day,null);
   let head='<tr><th class="corner">'+({teacher:'Teacher',room:'Room',grade:'Grade'}[kind])+'</th>';
-  cols.forEach(c=>{const blk=c.block?`<span class="blk">${c.block}</span>`:'';const ggt=normGG(c.grade_group)!=='all'?`<span class="ph-gg">${ggLabel(c.grade_group)}</span>`:'';
-    head+=`<th><div class="ph-lab">${blk}${c.label}${ggt}</div><div class="ph-time">${c.time} · ${c.minutes}m</div></th>`;});
+  cols.forEach(c=>{const blk=c.block?`<span class="blk">${c.block}</span>`:'';
+    const ggs=[...new Set(c.members.map(m=>normGG(m.grade_group)))].filter(x=>x!=='all');
+    const ggt=ggs.length===1?`<span class="ph-gg">${ggLabel(ggs[0])}</span>`:'';
+    const mins=Math.round(c.end-c.start);
+    head+=`<th><div class="ph-lab">${blk}${c.label}${ggt}</div><div class="ph-time">${c.time} · ${mins}m</div></th>`;});
   head+='</tr>';
   let body='';
   keys.forEach(k=>{
     const pin=state.only.has(k)?' pinned':'';
     let row=`<th class="rowhead${pin}" data-e="${esc(k)}"><div class="rn">${esc(k)}</div><span class="rm">${esc(rowMeta(kind,k))}</span></th>`;
-    cols.forEach(c=>{row+=`<td class="${cellClass(kind,k,c)}">${cellInner(kind,k,c)}</td>`;});
+    cols.forEach(c=>{row+=`<td class="${cellClass(kind,k,c,state.day)}">${cellInner(kind,k,c,state.day)}</td>`;});
     body+=`<tr>${row}</tr>`;
   });
   const admin=(state.admin&&typeof renderAdmin==='function')?renderAdmin(kind):'';
@@ -5827,8 +5897,8 @@ function renderWeek(){
   const cards=keys.map(k=>{
     const g2=kind==='grade'?gg(k):null;
     const cols=DAYS.map(day=>{
-      const cells=dayTeachingCols(day,g2).map(sl=>
-        `<div class="wk-cell ${cellClass(kind,k,sl)}"><div class="wt">${sl.label} · ${sl.time}</div>${cellInner(kind,k,sl)}</div>`).join('');
+      const cells=dayTeachingBlocks(day,g2).map(b=>
+        `<div class="wk-cell ${cellClass(kind,k,b,day)}"><div class="wt">${b.label} · ${b.time}</div>${cellInner(kind,k,b,day)}</div>`).join('');
       return `<div class="wk-daycol"><div class="wk-dayh">${day}</div>${cells}</div>`;
     }).join('');
     return `<section class="wk-card"><div class="wk-head"><span class="wk-name">${esc(k)}</span><span class="wk-meta">${esc(rowMeta(kind,k))}</span></div><div class="wk-week">${cols}</div></section>`;
@@ -5869,9 +5939,10 @@ function renderOnlyPanel(){
 function roomOccupant(room,day,st,en){return SESSIONS.find(s=>s.day===day&&overlaps(s.start,s.end,st,en)&&atom(s.room).includes(room));}
 function teacherOccupant(t,day,st,en){return SESSIONS.find(s=>s.day===day&&overlaps(s.start,s.end,st,en)&&s.teachers.includes(t));}
 function renderFind(){
-  const f=state.find,opts=dayTeachingCols(f.day,null);
+  const f=state.find,opts=dayTeachingBlocks(f.day,null).map(b=>({id:blockKey(b),label:b.label,time:b.time,start:b.start,end:b.end,
+    grade_group:[...new Set(b.members.map(m=>normGG(m.grade_group)))].filter(x=>x!=='all')[0]||'all'}));
   if(!opts.find(o=>o.id===f.period))f.period=opts.length?opts[0].id:null;
-  const sl=slotById[f.period];
+  const sl=opts.find(o=>o.id===f.period)?Object.assign({day:f.day},opts.find(o=>o.id===f.period)):null;
   const dayPills=DAYS.map(d=>`<button class="fd-day ${d===f.day?'on':''}" data-fd="${d}">${d}</button>`).join('');
   const perPills=opts.map(o=>`<button class="fd-per ${o.id===f.period?'on':''}" data-fp="${o.id}"><b>${o.label}</b><span>${o.time}${normGG(o.grade_group)!=='all'?' · '+ggLabel(o.grade_group):''}</span></button>`).join('');
   let board='';
@@ -5981,8 +6052,7 @@ function entityPageContent(kind,key){
       const y0=yFor(s.start), h=Math.max(16,(s.end-s.start)*scale);
       const bx=colX+2, bw=colW-4;
       rect(bx,y0+1.5,bw,h-3,0,0.7);
-      const sl0=slotById[s.period_id]||{};
-      text(bx+4,y0+5,6.5,false,(sl0.label||s.label)+'  '+(sl0.time||''),0.4);
+      text(bx+4,y0+5,6.5,false,s.label+'  '+(s.time||''),0.4);
       const nameL=wrap(s.subject,9.5,bw-8,h>=44?2:1);
       nameL.forEach((ln,i)=>text(bx+4,y0+5+8.5+i*10,9.5,true,ln));
       const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
@@ -5991,7 +6061,7 @@ function entityPageContent(kind,key){
     });
     // free teaching periods (deduped so concurrent Practica/Block C don't stack)
     let lastFree=-1;
-    dayTeachingCols(day,g2).slice().sort((a,b)=>a.start-b.start).forEach(sl=>{
+    dayTeachingBlocks(day,g2).slice().sort((a,b)=>a.start-b.start).forEach(sl=>{
       if(busy.some(s=>overlaps(s.start,s.end,sl.start,sl.end))) return;
       if(sl.start<lastFree) return; lastFree=sl.end;
       const y0=yFor(sl.start), h=Math.max(15,(sl.end-sl.start)*scale);
