@@ -241,6 +241,7 @@
     </div>
     <div class="spacer"></div>
     
+    <label class="pdf-color" id="pdfColorWrap" title="Fill class colors in the PDF"><input type="checkbox" id="pdfColor"> Color</label>
     <button class="btn" id="pdfBtn">Download PDF</button>
     <button class="btn primary" id="printBtn">Print</button>
   </div>
@@ -386,16 +387,6 @@ const S = {
    "row_group_start": 1
   },
   {
-   "id": "Tue_Period_2_78",
-   "day": "Tue",
-   "label": "Period 2",
-   "block": "B",
-   "minutes": 75,
-   "time": "10:15-11:05",
-   "grade_group": "78",
-   "row_group_start": 2
-  },
-  {
    "id": "Tue_Period_2",
    "day": "Tue",
    "label": "Period 2",
@@ -403,6 +394,16 @@ const S = {
    "minutes": 75,
    "time": "10:15-11:30",
    "grade_group": "912",
+   "row_group_start": 2
+  },
+  {
+   "id": "Tue_Period_2_78",
+   "day": "Tue",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:05",
+   "grade_group": "78",
    "row_group_start": 3
   },
   {
@@ -476,16 +477,6 @@ const S = {
    "row_group_start": 0
   },
   {
-   "id": "Wed_Period_1_78",
-   "day": "Wed",
-   "label": "Period 1",
-   "block": "D",
-   "minutes": 75,
-   "time": "9:20-10:10",
-   "grade_group": "78",
-   "row_group_start": 1
-  },
-  {
    "id": "Wed_Period_1",
    "day": "Wed",
    "label": "Period 1",
@@ -493,6 +484,16 @@ const S = {
    "minutes": 75,
    "time": "9:20-10:35",
    "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Wed_Period_1_78",
+   "day": "Wed",
+   "label": "Period 1",
+   "block": "D",
+   "minutes": 75,
+   "time": "9:20-10:10",
+   "grade_group": "78",
    "row_group_start": 2
   },
   {
@@ -506,16 +507,6 @@ const S = {
    "row_group_start": 3
   },
   {
-   "id": "Wed_Period_2",
-   "day": "Wed",
-   "label": "Period 2",
-   "block": "E",
-   "minutes": 75,
-   "time": "10:45-12:00",
-   "grade_group": "all",
-   "row_group_start": 4
-  },
-  {
    "id": "Wed_Period_2_78",
    "day": "Wed",
    "label": "Period 2",
@@ -523,6 +514,16 @@ const S = {
    "minutes": 75,
    "time": "10:45-11:35",
    "grade_group": "78",
+   "row_group_start": 4
+  },
+  {
+   "id": "Wed_Period_2",
+   "day": "Wed",
+   "label": "Period 2",
+   "block": "E",
+   "minutes": 75,
+   "time": "10:45-12:00",
+   "grade_group": "all",
    "row_group_start": 5
   },
   {
@@ -576,16 +577,6 @@ const S = {
    "row_group_start": 1
   },
   {
-   "id": "Thu_Period_2_78",
-   "day": "Thu",
-   "label": "Period 2",
-   "block": "B",
-   "minutes": 75,
-   "time": "10:15-11:05",
-   "grade_group": "78",
-   "row_group_start": 2
-  },
-  {
    "id": "Thu_Period_2",
    "day": "Thu",
    "label": "Period 2",
@@ -593,6 +584,16 @@ const S = {
    "minutes": 75,
    "time": "10:15-11:30",
    "grade_group": "912",
+   "row_group_start": 2
+  },
+  {
+   "id": "Thu_Period_2_78",
+   "day": "Thu",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:05",
+   "grade_group": "78",
    "row_group_start": 3
   },
   {
@@ -666,16 +667,6 @@ const S = {
    "row_group_start": 0
   },
   {
-   "id": "Fri_Period_1",
-   "day": "Fri",
-   "label": "Period 1",
-   "block": "E",
-   "minutes": 50,
-   "time": "8:50-9:40",
-   "grade_group": "912",
-   "row_group_start": 1
-  },
-  {
    "id": "Fri_Period_1_all",
    "day": "Fri",
    "label": "Period 1",
@@ -683,6 +674,16 @@ const S = {
    "minutes": 50,
    "time": "8:50-10:05",
    "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Fri_Period_1",
+   "day": "Fri",
+   "label": "Period 1",
+   "block": "E",
+   "minutes": 50,
+   "time": "8:50-9:40",
+   "grade_group": "912",
    "row_group_start": 2
   },
   {
@@ -5803,6 +5804,13 @@ function overlaps(aS,aE,bS,bE){return aS!=null&&bS!=null&&aS<bE&&bS<aE;}
 
 /* ---------- colors ---------- */
 const GC={'7A':'--g7a','7B':'--g7b','8':'--g8','9':'--g9','10':'--g10','11':'--g11','12':'--g12'};
+/* RGB (0-1) mirror of the CSS grade palette, for the color PDF fills. */
+const GRGB={'7A':[.184,.620,.561],'7B':[.133,.282,.427],'8':[.690,.478,.180],'9':[.310,.545,.247],
+  '10':[.482,.341,.639],'11':[.776,.373,.286],'12':[.247,.294,.392]};
+function gradeRGB(grades){const g=(grades||[]).filter(x=>!/^flex/.test(x));
+  if(g.length===1&&GRGB[g[0]])return GRGB[g[0]];
+  const s=new Set(g);if(s.size===2&&s.has('7A')&&s.has('7B'))return [.247,.486,.753];
+  return [.490,.545,.227];}
 function gradeStyle(grades){
   const g=grades.filter(x=>!/^flex/.test(x));
   if(g.length===1&&GC[g[0]])return{bg:`var(${GC[g[0]]})`};
@@ -6002,73 +6010,81 @@ function doBrowserPrint(){buildPrint();setTimeout(()=>window.print(),30);}
 
 /* ---------- true landscape B&W PDF (no library, no dialog) ---------- */
 function pdfEsc(t){return String(t).normalize('NFKD').replace(/[^\x20-\x7E]/g,'').replace(/\\/g,'\\\\').replace(/([()])/g,'\\$1');}
-function entityPageContent(kind,key){
-  // Full-page, time-proportional weekly calendar: classes sit at their real
-  // clock position on an hour grid, so the page fills top-to-bottom and days
-  // line up by time. B&W, dark ink so it prints crisply.
+function entityPageContent(kind,key,color){
+  // Full-page, time-proportional weekly calendar. Boxes are FILLED (white in
+  // B&W, grade colour in colour mode) so the hour grid doesn't show through and
+  // clutter the text. color=true fills each class with its grade colour.
   const PW=792,PH=612,M=36;
   const ops=['0 g 0 G 0.6 w'];
-  const text=(x,topY,size,bold,t,gray)=>ops.push(`${gray!=null?gray:0} g BT /${bold?'F2':'F1'} ${size} Tf ${x.toFixed(1)} ${(PH-topY-size).toFixed(1)} Td (${pdfEsc(t)}) Tj ET 0 g`);
-  const ctext=(cx,topY,size,bold,t,gray)=>text(cx-(String(t).length*size*0.27),topY,size,bold,t,gray); // ~centered
-  const rect=(x,topY,w,h,g,lw)=>ops.push(`${lw||0.6} w ${g!=null?g:0} G ${x.toFixed(1)} ${(PH-topY-h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re S 0 G 0.6 w`);
+  const col2op=c=>Array.isArray(c)?`${c[0].toFixed(3)} ${c[1].toFixed(3)} ${c[2].toFixed(3)} rg`:`${c==null?0:c} g`;
+  const textc=(x,topY,size,bold,t,col)=>ops.push(`${col2op(col)} BT /${bold?'F2':'F1'} ${size} Tf ${x.toFixed(1)} ${(PH-topY-size).toFixed(1)} Td (${pdfEsc(t)}) Tj ET 0 g`);
+  const ctext=(cx,topY,size,bold,t,col)=>textc(cx-(String(t).length*size*0.27),topY,size,bold,t,col);
+  const fillBox=(x,topY,w,h,fill)=>ops.push(`${col2op(fill)} ${x.toFixed(1)} ${(PH-topY-h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re f 0 g`);
+  const strokeBox=(x,topY,w,h,g,lw)=>ops.push(`${lw||0.6} w ${g} G ${x.toFixed(1)} ${(PH-topY-h).toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)} re S 0 G 0.6 w`);
   const hline=(x1,x2,yy,g,lw)=>ops.push(`${lw||0.4} w ${g} G ${x1.toFixed(1)} ${(PH-yy).toFixed(1)} m ${x2.toFixed(1)} ${(PH-yy).toFixed(1)} l S 0 G 0.6 w`);
   const vline=(xx,y1,y2,g,lw)=>ops.push(`${lw||0.4} w ${g} G ${xx.toFixed(1)} ${(PH-y1).toFixed(1)} m ${xx.toFixed(1)} ${(PH-y2).toFixed(1)} l S 0 G 0.6 w`);
   const wrap=(t,size,w,maxL)=>{const max=Math.max(5,Math.floor(w/(size*0.5)));const words=String(t).split(' ');const L=[];let cur='';
     words.forEach(wd=>{const tc=cur?cur+' '+wd:wd;if(tc.length<=max)cur=tc;else{if(cur)L.push(cur);cur=wd;}});if(cur)L.push(cur);
     if(L.length>maxL){L.length=maxL;L[maxL-1]=L[maxL-1].slice(0,max-1)+'…';}return L;};
+  const fmtHour=hm=>((Math.floor(hm/60)+11)%12)+1+':00 '+(hm<720?'AM':'PM');
 
-  // header
-  text(M,M,16,true,key);
-  const brand='Faculty Schedule Viewer   '+S.version;
-  text(PW-M-brand.length*4.3,M+3,8.5,false,brand,0.4);
+  // header: entity name only (+ small term on the right), then a rule
+  textc(M,M,16,true,key,0);
+  textc(PW-M-String(S.version).length*4.8,M+4,9,false,S.version,0.5);
   hline(M,PW-M,M+25,0,0.8);
 
-  // time grid geometry
   const teach=slots.filter(s=>TEACHING.test(s.label));
   const dayStart=Math.min(...teach.map(s=>s.start)), dayEnd=Math.max(...teach.map(s=>s.end));
-  const gutter=26, gridL=M+gutter, gridR=PW-M, colW=(gridR-gridL)/5;
+  const gutter=44, gridL=M+gutter, gridR=PW-M, colW=(gridR-gridL)/5;
   const gridTop=M+56, gridBot=PH-M-6, scale=(gridBot-gridTop)/(dayEnd-dayStart);
   const yFor=m=>gridTop+(m-dayStart)*scale;
 
-  // day headers
-  DAYS.forEach((d,ci)=>ctext(gridL+ci*colW+colW/2, M+40, 11, true, d));
+  DAYS.forEach((d,ci)=>ctext(gridL+ci*colW+colW/2, M+40, 11, true, d, 0));
 
-  // hour lines + gutter labels
+  // lighter hour grid + "9:00 AM" gutter labels
   for(let hm=Math.ceil(dayStart/60)*60; hm<=dayEnd; hm+=60){
-    const yy=yFor(hm); hline(gridL,gridR,yy,0.82,0.35);
-    const h12=((Math.floor(hm/60)+11)%12)+1;
-    text(M+3,yy-4,7.5,false,String(h12),0.45);
+    const yy=yFor(hm); hline(gridL,gridR,yy,0.86,0.3);
+    textc(M+3,yy-4,7,false,fmtHour(hm),0.45);
   }
-  // frame + column separators
-  rect(gridL,gridTop,gridR-gridL,gridBot-gridTop,0.55,0.8);
-  for(let ci=1;ci<5;ci++) vline(gridL+ci*colW,gridTop,gridBot,0.78,0.5);
+  strokeBox(gridL,gridTop,gridR-gridL,gridBot-gridTop,0.55,0.8);
+  for(let ci=1;ci<5;ci++) vline(gridL+ci*colW,gridTop,gridBot,0.8,0.5);
 
-  // sessions, positioned by time
   const g2=kind==='grade'?gg(key):null;
   DAYS.forEach((day,ci)=>{
     const colX=gridL+ci*colW;
     const busy=sessFor(kind,key).filter(s=>s.day===day&&s.start!=null);
     busy.forEach(s=>{
-      const y0=yFor(s.start), h=Math.max(16,(s.end-s.start)*scale);
-      const bx=colX+2, bw=colW-4;
-      rect(bx,y0+1.5,bw,h-3,0,0.7);
-      text(bx+4,y0+5,6.5,false,s.label+'  '+(s.time||''),0.4);
-      const nameL=wrap(s.subject,9.5,bw-8,h>=44?2:1);
-      nameL.forEach((ln,i)=>text(bx+4,y0+5+8.5+i*10,9.5,true,ln));
+      const y0=yFor(s.start), h=Math.max(15,(s.end-s.start)*scale), bx=colX+2, bw=colW-4, iy=y0+1.5, ih=h-3;
+      const rgb=color?gradeRGB(s.grades):null;
+      fillBox(bx,iy,bw,ih,color?rgb:1);                    // grade colour or white
+      strokeBox(bx,iy,bw,ih,color?0.35:0,color?0.5:0.7);
+      const ink=color?[1,1,1]:0, dim=color?[.92,.92,.92]:0.4, dim2=color?[.86,.86,.86]:0.22;
       const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
-      const sub=[who,(kind!=='room'&&s.room)?('Rm '+s.room):''].filter(Boolean).join('   ');
-      if(sub && h>=40) text(bx+4,y0+5+8.5+nameL.length*10,7.5,false,sub,0.22);
+      const rm=(kind!=='room'&&s.room)?('Rm '+s.room):'';
+      if(ih<24){                                            // compact: name only, vertically centred
+        textc(bx+4,y0+(h-9)/2,9,true,wrap(s.subject,9,bw-8,1)[0],ink);
+      }else if(ih<42){                                      // period label + name
+        textc(bx+4,y0+5,6.5,false,s.label,dim);
+        wrap(s.subject,9.5,bw-8,1).forEach(ln=>textc(bx+4,y0+14,9.5,true,ln,ink));
+      }else{                                                // full: label + time + name(s) + who/room
+        textc(bx+4,y0+5,6.5,false,s.label+'  '+(s.time||''),dim);
+        const nameL=wrap(s.subject,9.5,bw-8,2);
+        nameL.forEach((ln,i)=>textc(bx+4,y0+13.5+i*10,9.5,true,ln,ink));
+        const sub=[who,rm].filter(Boolean).join('   ');
+        if(sub) textc(bx+4,y0+13.5+nameL.length*10,7.5,false,sub,dim2);
+      }
     });
     // free teaching periods (deduped so concurrent Practica/Block C don't stack)
     let lastFree=-1;
     dayTeachingBlocks(day,g2).slice().sort((a,b)=>a.start-b.start).forEach(sl=>{
       if(busy.some(s=>overlaps(s.start,s.end,sl.start,sl.end))) return;
       if(sl.start<lastFree) return; lastFree=sl.end;
-      const y0=yFor(sl.start), h=Math.max(15,(sl.end-sl.start)*scale);
-      const bx=colX+2, bw=colW-4;
-      rect(bx,y0+1.5,bw,h-3,0.62,0.5);
-      text(bx+4,y0+5,6.5,false,sl.label+'  '+sl.time,0.5);
-      text(bx+4,y0+5+9,8.5,false,kind==='teacher'?'Planning':kind==='room'?'Open':'Study',0.5);
+      const y0=yFor(sl.start), h=Math.max(15,(sl.end-sl.start)*scale), bx=colX+2, bw=colW-4, iy=y0+1.5, ih=h-3;
+      fillBox(bx,iy,bw,ih,color?0.965:1);
+      strokeBox(bx,iy,bw,ih,color?0.78:0.62,0.5);
+      const lbl=kind==='teacher'?'Planning':kind==='room'?'Open':'Study';
+      if(ih<24){ textc(bx+4,y0+(h-9)/2,9,false,lbl,0.55); }
+      else{ textc(bx+4,y0+5,6.5,false,sl.label,0.5); textc(bx+4,y0+14,8.5,false,lbl,0.5); }
     });
   });
   return ops.join('\n');
@@ -6096,11 +6112,12 @@ function downloadPDF(){
   if(state.view==='find'||state.view==='now')return alert('Switch to Teacher, Room, or Grade to export a PDF.');
   const kind=state.view,keys=shown();
   if(!keys.length)return alert('No '+kind+'s to export — adjust your filter.');
-  const pdf=buildPDF(keys.map(k=>entityPageContent(kind,k)));
+  const color=!!(document.getElementById('pdfColor')&&document.getElementById('pdfColor').checked);
+  const pdf=buildPDF(keys.map(k=>entityPageContent(kind,k,color)));
   const blob=new Blob([pdf],{type:'application/pdf'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');
   const label=focused()?keys.length+' '+kind+'s':({teacher:'Teachers',room:'Rooms',grade:'Grades'}[kind]);
-  a.href=url;a.download=`Faculty Schedule - ${label} - ${S.version}.pdf`;document.body.appendChild(a);a.click();a.remove();
+  a.href=url;a.download=`Schedule - ${label}${color?' (color)':''} - ${S.version}.pdf`;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),3000);
 }
 
@@ -6190,7 +6207,9 @@ function nowTick(){
   if(key!==nowKey){renderNow(st);return;}
   const span=document.getElementById('nowCount');if(span)span.textContent=headSpanFor(st,now);
 }
-function renderMain(){if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
+function renderMain(){
+  const pc=document.getElementById('pdfColorWrap');if(pc)pc.style.display=(state.view==='now'||state.view==='find')?'none':'flex';
+  if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
 document.getElementById('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;
   state.view=b.dataset.view;state.only.clear();state.showPanel=false;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));renderControls();renderMain();};
