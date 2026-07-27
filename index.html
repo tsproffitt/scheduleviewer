@@ -133,7 +133,20 @@
   .wk-cards{display:flex;flex-wrap:wrap;gap:16px}
   .wk-card{flex:1 1 660px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
   .wk-head{display:flex;align-items:baseline;gap:10px;padding:11px 15px;border-bottom:1px solid var(--line2)}
+  .wk-kind{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--accent);border-radius:5px;padding:2px 6px;align-self:center}
   .wk-name{font-size:17px;font-weight:800;letter-spacing:-.2px}
+  /* Compare tab */
+  .cmp-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:16px}
+  .cmp-panes{display:flex;gap:10px;flex-wrap:wrap}
+  .cmp-pane{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--line2);border-radius:9px;padding:6px 8px}
+  .cmp-num{width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .cmp-pane select{font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--ink)}
+  .cmp-kind{font-weight:700;color:var(--accent)}
+  .cmp-remove{border:0;background:transparent;color:var(--faint);font-size:17px;line-height:1;cursor:pointer;padding:0 3px}
+  .cmp-remove:hover{color:var(--danger,#b4442f)}
+  .cmp-add{border:1px dashed var(--line);background:transparent;color:var(--accent);font-weight:700;font-size:12.5px;padding:7px 12px;border-radius:9px;cursor:pointer}
+  .cmp-add:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .cmp-cards .wk-card{flex:1 1 540px}
   .wk-meta{font-size:12px;color:var(--muted)}
   .wk-week{display:grid;grid-template-columns:repeat(5,1fr)}
   .wk-daycol{border-right:1px solid var(--line2);min-width:0}
@@ -238,6 +251,7 @@
       <button class="tab" data-view="room">Room</button>
       <button class="tab" data-view="grade">Grade</button>
       <button class="tab" data-view="find">Find Open</button>
+      <button class="tab" data-view="compare">Compare</button>
     </div>
     <div class="spacer"></div>
     
@@ -507,16 +521,6 @@ const S = {
    "row_group_start": 3
   },
   {
-   "id": "Wed_Period_2_78",
-   "day": "Wed",
-   "label": "Period 2",
-   "block": "E",
-   "minutes": 75,
-   "time": "10:45-11:35",
-   "grade_group": "78",
-   "row_group_start": 4
-  },
-  {
    "id": "Wed_Period_2",
    "day": "Wed",
    "label": "Period 2",
@@ -524,6 +528,16 @@ const S = {
    "minutes": 75,
    "time": "10:45-12:00",
    "grade_group": "all",
+   "row_group_start": 4
+  },
+  {
+   "id": "Wed_Period_2_78",
+   "day": "Wed",
+   "label": "Period 2",
+   "block": "E",
+   "minutes": 75,
+   "time": "10:45-11:35",
+   "grade_group": "78",
    "row_group_start": 5
   },
   {
@@ -5724,6 +5738,9 @@ const NONBOOK=new Set(S.non_bookable_rooms||[]);
 function atom(r){return r?String(r).split('/'):[];}
 function roomSort(a,b){const na=/^\d/.test(a),nb=/^\d/.test(b);if(na&&!nb)return -1;if(!na&&nb)return 1;return na?(+a)-(+b):a.localeCompare(b);}
 const ATOMIC_ROOMS=[...new Set(S.rooms.flatMap(atom))].filter(r=>!NONBOOK.has(r)).sort(roomSort);
+/* Prefix "Room " for numeric room codes (301, 203/205) but not named spaces
+   (Modular 2, Shop, Commons). Used everywhere a room is shown as a label. */
+function roomLabel(r){return r&&/^\d/.test(String(r))?'Room '+r:String(r||'');}
 const FACULTY=new Set(S.faculty_groups.faculty);
 // Faculty first (alpha), adjunct grouped at the bottom (alpha).
 const TEACHERS=S.teachers.slice().sort((a,b)=>{
@@ -5828,11 +5845,14 @@ function cellInner(kind,key,b,day){
     const many=mine.length>1;
     return mine.map(s=>{
       const st=gradeStyle(s.grades);
-      const room=(kind!=='room'&&s.room)?`<span class="rm">${esc(s.room)}</span>`:'';
-      const who=(kind==='room'||kind==='grade')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
-      /* sub-parts of one block get a time range so the split stays legible */
+      /* one flowing meta line: teacher(s) (room/grade views) + "Room N" —
+         flows under the name so long room labels never clip the class name */
+      const parts=[];
+      if(kind==='room'||kind==='grade'){const w=s.teachers.filter(t=>t!=='TBD').join(', ');if(w)parts.push(w);}
+      if(kind!=='room'&&s.room)parts.push(roomLabel(s.room));
+      const meta=parts.join(' · ');
       const pt=many?`<span class="pt">${fmtT(s.start)}–${fmtT(s.end)}</span>`:'';
-      return `<div class="blkc cls-w${many?' sub':''}" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${who?`<span class="sub2">${esc(who)}</span>`:''}${pt}${room}</div>`;
+      return `<div class="blkc cls-w${many?' sub':''}" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${meta?`<span class="sub2">${esc(meta)}</span>`:''}${pt}</div>`;
     }).join('');
   }
   if(NONTEACH.test(b.label))return `<div class="blkc"><span class="nm">${esc(b.label)}</span></div>`;
@@ -5850,7 +5870,8 @@ function cellClass(kind,key,b,day){
 
 /* ---------- state ---------- */
 const state={view:'now',day:DAYS[0],filter:'',only:new Set(),showPanel:false,
-  admin:false,adminUnlocked:false,find:{day:DAYS[0],period:null}};
+  admin:false,adminUnlocked:false,find:{day:DAYS[0],period:null},
+  compare:[{kind:'teacher',key:TEACHERS[0]},{kind:'room',key:ATOMIC_ROOMS[0]}]};
 function entities(v){return v==='teacher'?TEACHERS:v==='room'?ATOMIC_ROOMS:GRADES;}
 function focused(){return state.only.size>0;}
 function shown(){
@@ -5884,7 +5905,7 @@ function renderMatrix(){
   let body='';
   keys.forEach(k=>{
     const pin=state.only.has(k)?' pinned':'';
-    let row=`<th class="rowhead${pin}" data-e="${esc(k)}"><div class="rn">${esc(k)}</div><span class="rm">${esc(rowMeta(kind,k))}</span></th>`;
+    let row=`<th class="rowhead${pin}" data-e="${esc(k)}"><div class="rn">${esc(kind==='room'?roomLabel(k):k)}</div><span class="rm">${esc(rowMeta(kind,k))}</span></th>`;
     cols.forEach(c=>{row+=`<td class="${cellClass(kind,k,c,state.day)}">${cellInner(kind,k,c,state.day)}</td>`;});
     body+=`<tr>${row}</tr>`;
   });
@@ -5902,22 +5923,49 @@ function renderWeek(){
   const kind=state.view,keys=shown();
   const admin=(state.admin&&typeof renderAdmin==='function')?renderAdmin(kind):'';
   if(!keys.length){document.getElementById('main').innerHTML=admin+`<div class="hint">Nothing to show — adjust your filter or selection.</div>`;return;}
-  const cards=keys.map(k=>{
-    const g2=kind==='grade'?gg(k):null;
-    const cols=DAYS.map(day=>{
-      const cells=dayTeachingBlocks(day,g2).map(b=>
-        `<div class="wk-cell ${cellClass(kind,k,b,day)}"><div class="wt">${b.label} · ${b.time}</div>${cellInner(kind,k,b,day)}</div>`).join('');
-      return `<div class="wk-daycol"><div class="wk-dayh">${day}</div>${cells}</div>`;
-    }).join('');
-    return `<section class="wk-card"><div class="wk-head"><span class="wk-name">${esc(k)}</span><span class="wk-meta">${esc(rowMeta(kind,k))}</span></div><div class="wk-week">${cols}</div></section>`;
-  }).join('');
+  const cards=keys.map(k=>weekCard(kind,k)).join('');
   document.getElementById('main').innerHTML=admin+`<div class="wk-cards">${cards}</div>`;
+}
+/* one week card for any kind+entity — shared by Week view and the Compare tab */
+function weekCard(kind,k){
+  const g2=kind==='grade'?gg(k):null;
+  const cols=DAYS.map(day=>{
+    const cells=dayTeachingBlocks(day,g2).map(b=>
+      `<div class="wk-cell ${cellClass(kind,k,b,day)}"><div class="wt">${b.label} · ${b.time}</div>${cellInner(kind,k,b,day)}</div>`).join('');
+    return `<div class="wk-daycol"><div class="wk-dayh">${day}</div>${cells}</div>`;
+  }).join('');
+  const tag={teacher:'Teacher',room:'Room',grade:'Grade'}[kind];
+  return `<section class="wk-card"><div class="wk-head"><span class="wk-kind">${tag}</span><span class="wk-name">${esc(kind==='room'?roomLabel(k):k)}</span><span class="wk-meta">${esc(rowMeta(kind,k))}</span></div><div class="wk-week">${cols}</div></section>`;
+}
+
+/* ---------- Compare tab: 2–4 schedules of any kind, side by side ---------- */
+const KINDS=[['teacher','Teacher'],['room','Room'],['grade','Grade']];
+function renderCompare(){
+  const panes=state.compare;
+  const bar=panes.map((p,i)=>{
+    const kinds=KINDS.map(([v,l])=>`<option value="${v}" ${p.kind===v?'selected':''}>${l}</option>`).join('');
+    const ents=entities(p.kind).map(e=>`<option value="${esc(e)}" ${p.key===e?'selected':''}>${esc(p.kind==='room'?roomLabel(e):e)}</option>`).join('');
+    return `<div class="cmp-pane"><span class="cmp-num">${i+1}</span>
+      <select class="cmp-kind" data-i="${i}">${kinds}</select>
+      <select class="cmp-entity" data-i="${i}">${ents}</select>
+      ${panes.length>2?`<button class="cmp-remove" data-i="${i}" title="Remove">×</button>`:''}</div>`;
+  }).join('');
+  const add=panes.length<4?`<button class="cmp-add">+ Add schedule</button>`:'';
+  const cards=panes.map(p=>weekCard(p.kind,p.key)).join('');
+  document.getElementById('main').innerHTML=`
+    <div class="cmp-bar"><div class="cmp-panes">${bar}</div>${add}</div>
+    <div class="wk-cards cmp-cards">${cards}</div>`;
+  document.querySelectorAll('.cmp-kind').forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.i;
+    state.compare[i]={kind:sel.value,key:entities(sel.value)[0]};renderCompare();});
+  document.querySelectorAll('.cmp-entity').forEach(sel=>sel.onchange=()=>{state.compare[+sel.dataset.i].key=sel.value;renderCompare();});
+  document.querySelectorAll('.cmp-remove').forEach(b=>b.onclick=()=>{state.compare.splice(+b.dataset.i,1);renderCompare();});
+  const a=document.querySelector('.cmp-add');if(a)a.onclick=()=>{state.compare.push({kind:'grade',key:entities('grade')[0]});renderCompare();};
 }
 
 /* ---------- controls ---------- */
 function renderControls(){
   const c=document.getElementById('controls'),lg=document.getElementById('legend');
-  if(state.view==='find'||state.view==='now'){c.style.display='none';lg.style.display='none';return;}
+  if(state.view==='find'||state.view==='now'||state.view==='compare'){c.style.display='none';lg.style.display='none';return;}
   c.style.display='';lg.style.display='';
   const dopts=DAYS.concat(['Week']);
   document.getElementById('days').innerHTML=dopts.map(d=>`<button class="day-pill ${d===state.day?'active':''}${d==='Week'?' wk':''}" data-d="${d}">${d==='Week'?'▦ Week':d}</button>`).join('');
@@ -5937,7 +5985,7 @@ function renderOnlyPanel(){
   if(!state.showPanel)return;
   const list=entities(state.view);
   p.innerHTML=`<div class="oh"><button data-a="all">Select all</button><button data-a="clear">Clear</button></div>
-    <div class="only-list">${list.map(e=>`<label class="oitem"><input type="checkbox" data-o="${esc(e)}" ${state.only.has(e)?'checked':''}><span>${esc(e)}</span></label>`).join('')}</div>`;
+    <div class="only-list">${list.map(e=>`<label class="oitem"><input type="checkbox" data-o="${esc(e)}" ${state.only.has(e)?'checked':''}><span>${esc(state.view==='room'?roomLabel(e):e)}</span></label>`).join('')}</div>`;
   p.querySelectorAll('[data-o]').forEach(cb=>cb.onchange=()=>{cb.checked?state.only.add(cb.dataset.o):state.only.delete(cb.dataset.o);syncOnlyDay();renderControls();renderMain();});
   p.querySelector('[data-a="all"]').onclick=()=>{list.forEach(e=>state.only.add(e));syncOnlyDay();renderControls();renderMain();};
   p.querySelector('[data-a="clear"]').onclick=()=>{state.only.clear();syncOnlyDay();renderControls();renderMain();};
@@ -5961,8 +6009,8 @@ function renderFind(){
     const freeN=faculty.filter(t=>!teacherOccupant(t,sl.day,sl.start,sl.end)).length;
     const roomTiles=ATOMIC_ROOMS.map(r=>{
       const o=roomOccupant(r,sl.day,sl.start,sl.end);
-      if(!o)return `<div class="tile r-open"><span class="tl-h">${r}</span><span class="tl-s">Open</span></div>`;
-      return `<div class="tile r-busy"><span class="tl-h">${r}</span><span class="tl-c">${esc(o.subject)}</span><span class="tl-w">${esc(o.teachers.filter(t=>t!=='TBD').join(', '))}</span></div>`;
+      if(!o)return `<div class="tile r-open"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-s">Open</span></div>`;
+      return `<div class="tile r-busy"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-c">${esc(o.subject)}</span><span class="tl-w">${esc(o.teachers.filter(t=>t!=='TBD').join(', '))}</span></div>`;
     }).join('');
     const teachTiles=faculty.map(t=>{
       const o=teacherOccupant(t,sl.day,sl.start,sl.end);
@@ -5986,7 +6034,7 @@ function renderFind(){
 
 /* ---------- browser Print pages (B&W) ---------- */
 function buildPrint(){
-  if(state.view==='find'||state.view==='now'){document.getElementById('printRoot').innerHTML='';return;}
+  if(state.view==='find'||state.view==='now'||state.view==='compare'){document.getElementById('printRoot').innerHTML='';return;}
   const kind=state.view,keys=shown();
   const pages=keys.map(k=>{
     const g2=kind==='grade'?gg(k):null;
@@ -6029,7 +6077,7 @@ function entityPageContent(kind,key,color){
   const fmtHour=hm=>((Math.floor(hm/60)+11)%12)+1+':00 '+(hm<720?'AM':'PM');
 
   // header: entity name only (+ small term on the right), then a rule
-  textc(M,M,16,true,key,0);
+  textc(M,M,16,true,kind==='room'?roomLabel(key):key,0);
   textc(PW-M-String(S.version).length*4.8,M+4,9,false,S.version,0.5);
   hline(M,PW-M,M+25,0,0.8);
 
@@ -6060,7 +6108,7 @@ function entityPageContent(kind,key,color){
       strokeBox(bx,iy,bw,ih,color?0.35:0,color?0.5:0.7);
       const ink=color?[1,1,1]:0, dim=color?[.92,.92,.92]:0.4, dim2=color?[.86,.86,.86]:0.22;
       const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
-      const rm=(kind!=='room'&&s.room)?('Rm '+s.room):'';
+      const rm=(kind!=='room'&&s.room)?roomLabel(s.room):'';
       if(ih<24){                                            // compact: name only, vertically centred
         textc(bx+4,y0+(h-9)/2,9,true,wrap(s.subject,9,bw-8,1)[0],ink);
       }else if(ih<42){                                      // period label + name
@@ -6109,7 +6157,7 @@ function buildPDF(pages){
   return parts.join('');
 }
 function downloadPDF(){
-  if(state.view==='find'||state.view==='now')return alert('Switch to Teacher, Room, or Grade to export a PDF.');
+  if(state.view==='find'||state.view==='now'||state.view==='compare')return alert('Switch to Teacher, Room, or Grade to export a PDF.');
   const kind=state.view,keys=shown();
   if(!keys.length)return alert('No '+kind+'s to export — adjust your filter.');
   const color=!!(document.getElementById('pdfColor')&&document.getElementById('pdfColor').checked);
@@ -6161,7 +6209,7 @@ function openEntity(kind,key){
 }
 const _gi=g=>{const x=(g||[]).find(v=>GRADES.includes(v));return x?GRADES.indexOf(x):99;};
 function _sortS(arr){return arr.slice().sort((a,b)=>_gi(a.grades)-_gi(b.grades)||a.subject.localeCompare(b.subject));}
-function nowCard(s){const g=gradeStyle(s.grades),who=s.teachers.filter(x=>x!=='TBD').join(', '),rm=s.room?(' · '+s.room):'';
+function nowCard(s){const g=gradeStyle(s.grades),who=s.teachers.filter(x=>x!=='TBD').join(', '),rm=s.room?(' · '+roomLabel(s.room)):'';
   const tch=s.teachers.find(x=>x!=='TBD')||'';
   return `<div class="nowcard" style="background:${g.bg}"${tch?` data-go-teacher="${esc(tch)}"`:''}><span class="s">${esc(s.subject)}</span><span class="m">${esc(who)}${rm}</span></div>`;}
 function renderNow(st){
@@ -6179,7 +6227,7 @@ function renderNow(st){
     :`Nothing in session right now · <b>Up next:</b> ${day} · ${esc(meta.label)} at ${fmtT(t)}`;
   const inCards=inS.length?inS.map(nowCard).join(''):'<div class="now-empty">No classes in session right now.</div>';
   const nuCards=nuS.length?nuS.map(nowCard).join(''):'<div class="now-empty">—</div>';
-  const roomTiles=openR.map(r=>`<div class="tile r-open" data-go-room="${r}"><span class="tl-h">${r}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>';
+  const roomTiles=openR.map(r=>`<div class="tile r-open" data-go-room="${r}"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>';
   const facTiles=freeFac.map(x=>`<div class="tile t-free" data-go-teacher="${esc(x)}"><span class="tl-h">${x}</span><span class="tl-s">Planning</span></div>`).join('')||'<div class="now-empty">All faculty teaching.</div>';
   document.getElementById('main').innerHTML=`
    <div class="now">
@@ -6208,8 +6256,8 @@ function nowTick(){
   const span=document.getElementById('nowCount');if(span)span.textContent=headSpanFor(st,now);
 }
 function renderMain(){
-  const pc=document.getElementById('pdfColorWrap');if(pc)pc.style.display=(state.view==='now'||state.view==='find')?'none':'flex';
-  if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.day==='Week')renderWeek();else renderMatrix();}
+  const pc=document.getElementById('pdfColorWrap');if(pc)pc.style.display=(state.view==='now'||state.view==='find'||state.view==='compare')?'none':'flex';
+  if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.view==='compare')renderCompare();else if(state.day==='Week')renderWeek();else renderMatrix();}
 document.getElementById('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;
   state.view=b.dataset.view;state.only.clear();state.showPanel=false;
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));renderControls();renderMain();};
