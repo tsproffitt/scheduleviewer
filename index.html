@@ -95,6 +95,9 @@
   .cell.non .blkc{background:transparent;color:var(--faint)}
   .cell.non .nm{font-weight:600;font-style:italic;font-size:12px}
   .cell.void{background:repeating-linear-gradient(135deg,transparent,transparent 6px,#f5f7f9 6px,#f5f7f9 12px)}
+  /* whole-school Flex/Study block (Fri Club & Study Hall) — a neutral filled card */
+  .blkc.allschool{background:var(--chip);color:var(--muted);border:1px solid var(--line)}
+  .blkc.allschool .nm{font-weight:700;font-size:12.5px}
 
   .avail{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
   .avail h2{font-size:16px;margin-bottom:3px;letter-spacing:-.2px}
@@ -401,16 +404,6 @@ const S = {
    "row_group_start": 1
   },
   {
-   "id": "Tue_Period_2_78",
-   "day": "Tue",
-   "label": "Period 2",
-   "block": "B",
-   "minutes": 75,
-   "time": "10:15-11:05",
-   "grade_group": "78",
-   "row_group_start": 2
-  },
-  {
    "id": "Tue_Period_2",
    "day": "Tue",
    "label": "Period 2",
@@ -418,6 +411,16 @@ const S = {
    "minutes": 75,
    "time": "10:15-11:30",
    "grade_group": "912",
+   "row_group_start": 2
+  },
+  {
+   "id": "Tue_Period_2_78",
+   "day": "Tue",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:05",
+   "grade_group": "78",
    "row_group_start": 3
   },
   {
@@ -491,16 +494,6 @@ const S = {
    "row_group_start": 0
   },
   {
-   "id": "Wed_Period_1_78",
-   "day": "Wed",
-   "label": "Period 1",
-   "block": "D",
-   "minutes": 75,
-   "time": "9:20-10:10",
-   "grade_group": "78",
-   "row_group_start": 1
-  },
-  {
    "id": "Wed_Period_1",
    "day": "Wed",
    "label": "Period 1",
@@ -508,6 +501,16 @@ const S = {
    "minutes": 75,
    "time": "9:20-10:35",
    "grade_group": "all",
+   "row_group_start": 1
+  },
+  {
+   "id": "Wed_Period_1_78",
+   "day": "Wed",
+   "label": "Period 1",
+   "block": "D",
+   "minutes": 75,
+   "time": "9:20-10:10",
+   "grade_group": "78",
    "row_group_start": 2
   },
   {
@@ -591,16 +594,6 @@ const S = {
    "row_group_start": 1
   },
   {
-   "id": "Thu_Period_2_78",
-   "day": "Thu",
-   "label": "Period 2",
-   "block": "B",
-   "minutes": 75,
-   "time": "10:15-11:05",
-   "grade_group": "78",
-   "row_group_start": 2
-  },
-  {
    "id": "Thu_Period_2",
    "day": "Thu",
    "label": "Period 2",
@@ -608,6 +601,16 @@ const S = {
    "minutes": 75,
    "time": "10:15-11:30",
    "grade_group": "912",
+   "row_group_start": 2
+  },
+  {
+   "id": "Thu_Period_2_78",
+   "day": "Thu",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:05",
+   "grade_group": "78",
    "row_group_start": 3
   },
   {
@@ -711,6 +714,17 @@ const S = {
    "row_group_start": 3
   },
   {
+   "id": "Fri_Flex_D",
+   "day": "Fri",
+   "label": "Flex D",
+   "block": null,
+   "minutes": 50,
+   "time": "10:15-11:05",
+   "grade_group": "all",
+   "allschool": "Club & Study Hall",
+   "row_group_start": 4
+  },
+  {
    "id": "Fri_Period_2",
    "day": "Fri",
    "label": "Period 2",
@@ -718,7 +732,7 @@ const S = {
    "minutes": 75,
    "time": "11:10-12:25",
    "grade_group": "all",
-   "row_group_start": 4
+   "row_group_start": 5
   },
   {
    "id": "Fri_Period_3",
@@ -728,7 +742,7 @@ const S = {
    "minutes": 75,
    "time": "1:05-2:20",
    "grade_group": "all",
-   "row_group_start": 5
+   "row_group_start": 6
   },
   {
    "id": "Fri_PRAC_2",
@@ -738,7 +752,7 @@ const S = {
    "minutes": 50,
    "time": "2:25-3:15",
    "grade_group": "all",
-   "row_group_start": 6
+   "row_group_start": 7
   }
  ],
  "classes": [
@@ -1024,7 +1038,7 @@ const S = {
     "10"
    ],
    "rooms": [
-    "302"
+    "301"
    ],
    "sessions": [
     {
@@ -1039,9 +1053,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r88",
-     "room": "302",
+     "room": "301",
      "time": "2:20-3:10",
-     "raw": "10 Rhetoric - Hobson - 302"
+     "raw": "10 Rhetoric - Hobson - 301"
     },
     {
      "day": "Tue",
@@ -1055,9 +1069,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r91",
-     "room": "302",
+     "room": "301",
      "time": "1:05-2:20",
-     "raw": "10 Rhetoric - Hobson - 302"
+     "raw": "10 Rhetoric - Hobson - 301"
     },
     {
      "day": "Thu",
@@ -1071,9 +1085,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r94",
-     "room": "302",
+     "room": "301",
      "time": "1:05-2:20",
-     "raw": "10 Rhetoric - Hobson - 302"
+     "raw": "10 Rhetoric - Hobson - 301"
     }
    ],
    "locked": false
@@ -4315,7 +4329,7 @@ const S = {
     "8"
    ],
    "rooms": [
-    "303"
+    "301"
    ],
    "sessions": [
     {
@@ -4330,9 +4344,9 @@ const S = {
      "grade_group": "78",
      "paired_with": [],
      "session_id": "r90",
-     "room": "303",
+     "room": "301",
      "time": "10:15-11:05",
-     "raw": "8 Logic - Hobson - 303"
+     "raw": "8 Logic - Hobson - 301"
     },
     {
      "day": "Thu",
@@ -4346,9 +4360,9 @@ const S = {
      "grade_group": "78",
      "paired_with": [],
      "session_id": "r93",
-     "room": "303",
+     "room": "301",
      "time": "10:15-11:05",
-     "raw": "8 Logic - Hobson - 303"
+     "raw": "8 Logic - Hobson - 301"
     }
    ],
    "locked": false
@@ -4459,7 +4473,7 @@ const S = {
     "8"
    ],
    "rooms": [
-    "303"
+    "301"
    ],
    "sessions": [
     {
@@ -4474,9 +4488,9 @@ const S = {
      "grade_group": "78",
      "paired_with": [],
      "session_id": "r189",
-     "room": "303",
+     "room": "301",
      "time": "11:05-11:30",
-     "raw": "8 Study - Hobson - 303"
+     "raw": "8 Study - Hobson - 301"
     },
     {
      "day": "Thu",
@@ -4490,9 +4504,9 @@ const S = {
      "grade_group": "78",
      "paired_with": [],
      "session_id": "r190",
-     "room": "303",
+     "room": "301",
      "time": "11:05-11:30",
-     "raw": "8 Study - Hobson - 303"
+     "raw": "8 Study - Hobson - 301"
     }
    ],
    "locked": false
@@ -5726,6 +5740,11 @@ const NONTEACH=/^(Opening|Lunch|Chapel|Morning)/;
 function toMin(s){let[h,m]=s.split(':').map(Number);if(h<=7)h+=12;return h*60+m;}
 const slots=S.period_slots.map(p=>{const[a,b]=p.time.split('-');return{...p,start:toMin(a),end:toMin(b)};});
 const slotById=Object.fromEntries(slots.map(s=>[s.id,s]));
+/* All-school Flex/Study blocks (e.g. Friday Flex D "Club & Study Hall") have no
+   per-entity sessions — the whole school is in them — so every teacher/room/grade
+   cell should show the subject, not "Planning"/"Open"/"Study". Keyed by label
+   (unique per day: only Friday has "Flex D"). */
+const ALLSCHOOL={};slots.forEach(s=>{if(s.allschool)ALLSCHOOL[s.label]=s.allschool;});
 function dayCols(day){return slots.filter(s=>s.day===day).sort((a,b)=>a.start-b.start||a.label.localeCompare(b.label));}
 /* Grade-group codes differ by pipeline vintage ('78'/'912' in the Master Data
    export, '7-8'/'9-12' in the retired v16 grid). Normalize before comparing —
@@ -5837,6 +5856,30 @@ function gradeStyle(grades){
   const a=cols[0]||'var(--gmulti)',b=cols[1]||a;
   return{bg:`linear-gradient(107deg,${a} 0 54%,${b} 54% 100%)`};
 }
+/* Per-class colours for the TEACHER view (viewer + PDF). Grade colours are kept
+   everywhere else (Room/Grade/Now/Find) — they're the shared visual language —
+   but on a single teacher's schedule several distinct classes often share a
+   grade and blur together, so here each class gets its own hue. Assignment is
+   per-teacher (a teacher has only a handful of classes) and stable across the
+   week: distinct subjects are sorted and mapped to the palette in order.
+   Palette: 12 medium-dark, perceptually-spread hues, all readable under the
+   white cell text. */
+const CLASS_PALETTE=['#4e79a7','#c0592b','#4f9e45','#7d4bb0','#b8912b','#1f9e93',
+  '#b03b6b','#5f7d2e','#37627e','#9c5a2b','#8a4fb0','#6b6f76'];
+function hexRGB(h){const n=parseInt(h.slice(1),16);return[(n>>16&255)/255,(n>>8&255)/255,(n&255)/255];}
+const _classColorCache={};
+function classSubjectMap(teacher){
+  let m=_classColorCache[teacher];
+  if(!m){
+    m={};
+    [...new Set(SESSIONS.filter(s=>s.teachers.includes(teacher)).map(s=>s.subject))]
+      .sort().forEach((sub,i)=>{m[sub]=CLASS_PALETTE[i%CLASS_PALETTE.length];});
+    _classColorCache[teacher]=m;
+  }
+  return m;
+}
+function classColorCss(teacher,subject){return classSubjectMap(teacher)[subject]||CLASS_PALETTE[0];}
+function classColorRGB(teacher,subject){return hexRGB(classColorCss(teacher,subject));}
 
 /* ---------- cell ---------- */
 function cellInner(kind,key,b,day){
@@ -5844,7 +5887,7 @@ function cellInner(kind,key,b,day){
   if(mine.length){
     const many=mine.length>1;
     return mine.map(s=>{
-      const st=gradeStyle(s.grades);
+      const st=kind==='teacher'?{bg:classColorCss(key,s.subject)}:gradeStyle(s.grades);
       /* one flowing meta line: teacher(s) (room/grade views) + "Room N" —
          flows under the name so long room labels never clip the class name */
       const parts=[];
@@ -5855,6 +5898,7 @@ function cellInner(kind,key,b,day){
       return `<div class="blkc cls-w${many?' sub':''}" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${meta?`<span class="sub2">${esc(meta)}</span>`:''}${pt}</div>`;
     }).join('');
   }
+  if(ALLSCHOOL[b.label])return `<div class="blkc allschool"><span class="nm">${esc(ALLSCHOOL[b.label])}</span></div>`;
   if(NONTEACH.test(b.label))return `<div class="blkc"><span class="nm">${esc(b.label)}</span></div>`;
   const busyElse=sessFor(kind,key).some(s=>s.day===day&&overlaps(s.start,s.end,b.start,b.end));
   if(busyElse)return `<div class="blkc"></div>`;
@@ -5863,6 +5907,7 @@ function cellInner(kind,key,b,day){
 }
 function cellClass(kind,key,b,day){
   if(sessionsInBlock(kind,key,day,b).length)return 'cell';
+  if(ALLSCHOOL[b.label])return 'cell allschool';
   if(NONTEACH.test(b.label))return 'cell non';
   if(sessFor(kind,key).some(s=>s.day===day&&overlaps(s.start,s.end,b.start,b.end)))return 'cell void';
   return kind==='teacher'?'cell plan':'cell open';
@@ -5975,10 +6020,15 @@ function renderControls(){
   document.getElementById('clearF').style.display=(state.filter||focused())?'':'none';
   document.getElementById('onlyBtn').classList.toggle('on',focused());
   renderOnlyPanel();
-  const legend=[['7A','var(--g7a)'],['7B','var(--g7b)'],['Comb. 7','var(--gC7)'],['8','var(--g8)'],['9','var(--g9)'],
-    ['10','var(--g10)'],['11','var(--g11)'],['12','var(--g12)'],['Multigrade','linear-gradient(107deg,var(--g8) 0 54%,var(--g9) 54%)'],
-    ['Planning','var(--plan)'],['Open / Study','var(--open)']];
-  lg.innerHTML=legend.map(([n,c])=>`<span class="lg"><span class="sw" style="background:${c};${n==='Open / Study'?'border:1px dashed var(--line)':''}"></span>${n}</span>`).join('');
+  // Teacher view colours each class individually, so the grade legend doesn't
+  // apply — show a short note instead. Every other view keeps the grade key.
+  const legend=state.view==='teacher'
+    ? [['Planning','var(--plan)'],['Open / Study','var(--open)']]
+    : [['7A','var(--g7a)'],['7B','var(--g7b)'],['Comb. 7','var(--gC7)'],['8','var(--g8)'],['9','var(--g9)'],
+       ['10','var(--g10)'],['11','var(--g11)'],['12','var(--g12)'],['Multigrade','linear-gradient(107deg,var(--g8) 0 54%,var(--g9) 54%)'],
+       ['Planning','var(--plan)'],['Open / Study','var(--open)']];
+  const note=state.view==='teacher'?`<span class="lg" style="font-style:italic">Each class has its own colour</span>`:'';
+  lg.innerHTML=note+legend.map(([n,c])=>`<span class="lg"><span class="sw" style="background:${c};${n==='Open / Study'?'border:1px dashed var(--line)':''}"></span>${n}</span>`).join('');
 }
 function renderOnlyPanel(){
   const p=document.getElementById('onlyPanel');p.style.display=state.showPanel?'flex':'none';
@@ -6103,8 +6153,8 @@ function entityPageContent(kind,key,color){
     const busy=sessFor(kind,key).filter(s=>s.day===day&&s.start!=null);
     busy.forEach(s=>{
       const y0=yFor(s.start), h=Math.max(15,(s.end-s.start)*scale), bx=colX+2, bw=colW-4, iy=y0+1.5, ih=h-3;
-      const rgb=color?gradeRGB(s.grades):null;
-      fillBox(bx,iy,bw,ih,color?rgb:1);                    // grade colour or white
+      const rgb=color?(kind==='teacher'?classColorRGB(key,s.subject):gradeRGB(s.grades)):null;
+      fillBox(bx,iy,bw,ih,color?rgb:1);                    // per-class (teacher) / grade colour, or white
       strokeBox(bx,iy,bw,ih,color?0.35:0,color?0.5:0.7);
       const ink=color?[1,1,1]:0, dim=color?[.92,.92,.92]:0.4, dim2=color?[.86,.86,.86]:0.22;
       const who=(kind!=='teacher')?s.teachers.filter(t=>t!=='TBD').join(', '):'';
@@ -6128,11 +6178,12 @@ function entityPageContent(kind,key,color){
       if(busy.some(s=>overlaps(s.start,s.end,sl.start,sl.end))) return;
       if(sl.start<lastFree) return; lastFree=sl.end;
       const y0=yFor(sl.start), h=Math.max(15,(sl.end-sl.start)*scale), bx=colX+2, bw=colW-4, iy=y0+1.5, ih=h-3;
-      fillBox(bx,iy,bw,ih,color?0.965:1);
+      const asl=ALLSCHOOL[sl.label];
+      fillBox(bx,iy,bw,ih,asl?(color?0.90:0.93):(color?0.965:1));
       strokeBox(bx,iy,bw,ih,color?0.78:0.62,0.5);
-      const lbl=kind==='teacher'?'Planning':kind==='room'?'Open':'Study';
-      if(ih<24){ textc(bx+4,y0+(h-9)/2,9,false,lbl,0.55); }
-      else{ textc(bx+4,y0+5,6.5,false,sl.label,0.5); textc(bx+4,y0+14,8.5,false,lbl,0.5); }
+      const lbl=asl||(kind==='teacher'?'Planning':kind==='room'?'Open':'Study');
+      if(ih<24){ textc(bx+4,y0+(h-9)/2,9,!!asl,lbl,0.5); }
+      else{ textc(bx+4,y0+5,6.5,false,sl.label,0.5); textc(bx+4,y0+14,8.5,!!asl,wrap(lbl,8.5,bw-8,1)[0],0.4); }
     });
   });
   return ops.join('\n');
