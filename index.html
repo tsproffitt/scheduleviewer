@@ -524,16 +524,6 @@ const S = {
    "row_group_start": 3
   },
   {
-   "id": "Wed_Period_2_78",
-   "day": "Wed",
-   "label": "Period 2",
-   "block": "E",
-   "minutes": 75,
-   "time": "10:45-11:35",
-   "grade_group": "78",
-   "row_group_start": 4
-  },
-  {
    "id": "Wed_Period_2",
    "day": "Wed",
    "label": "Period 2",
@@ -541,6 +531,16 @@ const S = {
    "minutes": 75,
    "time": "10:45-12:00",
    "grade_group": "all",
+   "row_group_start": 4
+  },
+  {
+   "id": "Wed_Period_2_78",
+   "day": "Wed",
+   "label": "Period 2",
+   "block": "E",
+   "minutes": 75,
+   "time": "10:45-11:35",
+   "grade_group": "78",
    "row_group_start": 5
   },
   {
@@ -5847,6 +5847,10 @@ function gradeRGB(grades){const g=(grades||[]).filter(x=>!/^flex/.test(x));
   if(g.length===1&&GRGB[g[0]])return GRGB[g[0]];
   const s=new Set(g);if(s.size===2&&s.has('7A')&&s.has('7B'))return [.247,.486,.753];
   return [.490,.545,.227];}
+/* Exactly the combined 7A+7B case (its own deliberate solid colour, --gC7),
+   as opposed to a genuine multi-grade span that renders as a two-colour split. */
+function isComb7(grades){const s=new Set((grades||[]).filter(x=>!/^flex/.test(x)));
+  return s.size===2&&s.has('7A')&&s.has('7B');}
 function gradeStyle(grades){
   const g=grades.filter(x=>!/^flex/.test(x));
   if(g.length===1&&GC[g[0]])return{bg:`var(${GC[g[0]]})`};
@@ -5887,7 +5891,12 @@ function cellInner(kind,key,b,day){
   if(mine.length){
     const many=mine.length>1;
     return mine.map(s=>{
-      const st=kind==='teacher'?{bg:classColorCss(key,s.subject)}:gradeStyle(s.grades);
+      /* Grade view: each row IS one grade, so colour by the row's grade solidly
+         (a multi-grade class like "8/9 Algebra" otherwise shows the other grade's
+         colour bleeding in). Combined-7 keeps its dedicated --gC7. */
+      const st=kind==='teacher'?{bg:classColorCss(key,s.subject)}
+              :kind==='grade'?gradeStyle(isComb7(s.grades)?s.grades:[key])
+              :gradeStyle(s.grades);
       /* one flowing meta line: teacher(s) (room/grade views) + "Room N" —
          flows under the name so long room labels never clip the class name */
       const parts=[];
@@ -6020,13 +6029,16 @@ function renderControls(){
   document.getElementById('clearF').style.display=(state.filter||focused())?'':'none';
   document.getElementById('onlyBtn').classList.toggle('on',focused());
   renderOnlyPanel();
-  // Teacher view colours each class individually, so the grade legend doesn't
-  // apply — show a short note instead. Every other view keeps the grade key.
-  const legend=state.view==='teacher'
-    ? [['Planning','var(--plan)'],['Open / Study','var(--open)']]
-    : [['7A','var(--g7a)'],['7B','var(--g7b)'],['Comb. 7','var(--gC7)'],['8','var(--g8)'],['9','var(--g9)'],
-       ['10','var(--g10)'],['11','var(--g11)'],['12','var(--g12)'],['Multigrade','linear-gradient(107deg,var(--g8) 0 54%,var(--g9) 54%)'],
-       ['Planning','var(--plan)'],['Open / Study','var(--open)']];
+  // Teacher view colours each class individually (note instead of the grade key).
+  // Grade view colours each row by its own grade — no multi-grade gradient — so
+  // it drops the Multigrade swatch; Room view keeps it (it still shows the split).
+  const grades=[['7A','var(--g7a)'],['7B','var(--g7b)'],['Comb. 7','var(--gC7)'],['8','var(--g8)'],['9','var(--g9)'],
+    ['10','var(--g10)'],['11','var(--g11)'],['12','var(--g12)']];
+  const multi=['Multigrade','linear-gradient(107deg,var(--g8) 0 54%,var(--g9) 54%)'];
+  const tail=[['Planning','var(--plan)'],['Open / Study','var(--open)']];
+  const legend=state.view==='teacher'?tail
+    :state.view==='grade'?[...grades,...tail]
+    :[...grades,multi,...tail];
   const note=state.view==='teacher'?`<span class="lg" style="font-style:italic">Each class has its own colour</span>`:'';
   lg.innerHTML=note+legend.map(([n,c])=>`<span class="lg"><span class="sw" style="background:${c};${n==='Open / Study'?'border:1px dashed var(--line)':''}"></span>${n}</span>`).join('');
 }
@@ -6153,7 +6165,9 @@ function entityPageContent(kind,key,color){
     const busy=sessFor(kind,key).filter(s=>s.day===day&&s.start!=null);
     busy.forEach(s=>{
       const y0=yFor(s.start), h=Math.max(15,(s.end-s.start)*scale), bx=colX+2, bw=colW-4, iy=y0+1.5, ih=h-3;
-      const rgb=color?(kind==='teacher'?classColorRGB(key,s.subject):gradeRGB(s.grades)):null;
+      const rgb=color?(kind==='teacher'?classColorRGB(key,s.subject)
+              :kind==='grade'?gradeRGB(isComb7(s.grades)?s.grades:[key])
+              :gradeRGB(s.grades)):null;
       fillBox(bx,iy,bw,ih,color?rgb:1);                    // per-class (teacher) / grade colour, or white
       strokeBox(bx,iy,bw,ih,color?0.35:0,color?0.5:0.7);
       const ink=color?[1,1,1]:0, dim=color?[.92,.92,.92]:0.4, dim2=color?[.86,.86,.86]:0.22;
