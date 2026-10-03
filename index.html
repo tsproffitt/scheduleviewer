@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-title" content="Schedule">
 <title>Faculty Schedule Viewer</title>
 <style>
   :root{
@@ -223,6 +225,108 @@
   .now-panel .tilegrid{padding:13px}
   .now-empty{padding:20px 15px;color:var(--faint);font-style:italic;text-align:center;font-size:12.5px}
 
+  /* ---- clickable entity links (class -> grade, teacher -> teacher, room -> room) ---- */
+  [data-go]{cursor:pointer}
+  .go{border-radius:3px}
+  .go:hover{text-decoration:underline;text-underline-offset:2px}
+  .nowcard .m .go,.blkc .sub2 .go{text-decoration:underline dotted;text-decoration-color:rgba(255,255,255,.55);text-underline-offset:2px}
+  .tile .go{text-decoration:underline dotted;text-decoration-color:var(--line);text-underline-offset:2px}
+
+  /* ---- Find Open: multi-period availability table ---- */
+  .fd-mode{display:flex;gap:6px;align-items:center;margin-left:4px}
+  .fd-chip{border:1px dashed var(--line);background:transparent;color:var(--accent);font-weight:700;font-size:12px;padding:6px 11px;border-radius:9px}
+  .fd-chip:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .fd-chip.on{border-style:solid;border-color:var(--accent);background:var(--accent);color:#fff}
+  .fd-per .ck{display:none}
+  .fd-multi .fd-per .ck{display:inline-block;width:12px;height:12px;border:1.5px solid var(--faint);border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .fd-multi .fd-per.on .ck{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 2px #fff}
+  .fd-only{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600;cursor:pointer;user-select:none}
+  .fd-only input{accent-color:var(--accent)}
+  .av-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--r)}
+  table.av{border-collapse:separate;border-spacing:0;width:100%;font-size:12px}
+  table.av th,table.av td{border-bottom:1px solid var(--line2);border-right:1px solid var(--line2);padding:5px;vertical-align:middle}
+  table.av thead th{position:sticky;top:0;z-index:3;background:var(--bg);font-size:11px;color:var(--muted);text-align:center;white-space:nowrap;padding:7px 6px}
+  table.av thead th span{display:block;font-size:9.5px;color:var(--faint);font-weight:600}
+  table.av th.avh{position:sticky;left:0;z-index:2;background:var(--panel);text-align:left;white-space:nowrap;padding:6px 10px;min-width:104px;font-size:13px}
+  table.av thead th.avh{z-index:4;background:var(--bg)}
+  table.av th.avh.all{background:#e8f4ec;color:#1d6b3f}
+  table.av th.avh .n{display:block;font-size:10px;font-weight:600;color:var(--faint)}
+  table.av th.avh.all .n{color:#2f8f5b}
+  table.av td{min-width:92px;text-align:center}
+  .av-o{background:#e8f4ec;color:#2f8f5b;font-weight:800;border-radius:6px;padding:6px 4px}
+  .av-f{background:#eaf2fb;color:var(--accent);font-weight:800;border-radius:6px;padding:6px 4px}
+  .av-b{color:var(--muted);font-size:11px;line-height:1.2}
+  .av-b b{display:block;color:var(--ink);font-weight:700;font-size:11.5px}
+
+  /* ---- matrix transposed for phones (periods down, ≤4 entities across) ---- */
+  table.grid.tp{min-width:0;table-layout:fixed}
+  table.grid.tp th.corner,table.grid.tp th.rowhead{width:76px;min-width:0;max-width:none;padding:6px 7px}
+  table.grid.tp td.cell{min-width:0}
+  table.grid.tp .blkc{padding:5px 6px}
+  table.grid.tp .blkc .nm{font-size:12px;overflow-wrap:anywhere}
+  table.grid.tp .blkc .sub2{font-size:10px}
+  table.grid.tp th.colhead{padding:7px 4px}
+  table.grid.tp th.rowhead .rm{white-space:normal}
+  table.grid.tp th.colhead{cursor:pointer}
+  table.grid.tp th.colhead .rn{font-weight:750;font-size:13.5px}
+  table.grid.tp th.colhead .rm{font-size:10px;color:var(--faint);font-weight:600;display:block}
+
+  /* ---- phones ---- */
+  @media(max-width:700px){
+    body{font-size:14px}
+    .topbar{flex-wrap:wrap;gap:8px 10px;padding:8px 12px}
+    .brand{font-size:15px}
+    .ver{display:none}
+    .tabs{order:3;flex:1 1 100%;margin-left:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{flex:1 0 auto;padding:8px 11px}
+    #printBtn,#pdfColorWrap{display:none !important}
+    #pdfBtn{padding:6px 10px;font-size:12.5px}
+    .controls{position:static;padding:10px 12px;gap:8px}
+    .days{overflow-x:auto;flex:1 1 100%;scrollbar-width:none}
+    .days::-webkit-scrollbar{display:none}
+    .day-pill{padding:8px 0;flex:1 0 auto;min-width:50px;font-size:13px}
+    .count{font-size:12px}
+    .sep{display:none}
+    .filter{flex:1 1 160px}
+    .filter input{width:100%;min-width:0;font-size:16px}   /* 16px stops iOS zooming on focus */
+    select,.cmp-pane select{font-size:16px}
+    .only-panel{width:min(270px,88vw)}
+    .legend{padding:8px 12px 2px}
+    .wrap{padding:10px 12px 32px}
+    .gridcard{max-height:calc(100dvh - 120px)}
+    th.corner,th.rowhead{min-width:100px;max-width:118px;padding:6px 8px}
+    th.rowhead .rn{font-size:13px}
+    td.cell{min-width:104px}
+    /* week cards stack day-by-day instead of a 680px-wide sideways scroll */
+    .wk-card{overflow:visible}
+    .wk-week{grid-template-columns:1fr;min-width:0}
+    .wk-daycol{border-right:0;border-bottom:1px solid var(--line)}
+    .wk-daycol:last-child{border-bottom:0}
+    .wk-dayh{text-align:left;padding:7px 12px}
+    .wk-cell{display:grid;grid-template-columns:82px 1fr;gap:8px;align-items:center;padding:5px 10px}
+    .wk-cell .wt{margin:0;font-size:10px;line-height:1.25}
+    .wk-cell.void{display:none}
+    .wk-head{flex-wrap:wrap;padding:10px 12px}
+    .cmp-bar{padding:10px}
+    .cmp-pane{flex:1 1 100%}
+    .cmp-pane select.cmp-entity{flex:1;min-width:0}
+    .avail{padding:14px 12px}
+    .fd-days{overflow-x:auto;max-width:100%;scrollbar-width:none}
+    .fd-days::-webkit-scrollbar{display:none}
+    .fd-day{flex:1 0 auto}
+    .fd-per{min-width:0;padding:6px 10px}
+    table.av td{min-width:76px;padding:4px}
+    table.av th.avh{min-width:90px;padding:6px 8px;font-size:12.5px}
+    .tilegrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))}
+    .now-hero{padding-bottom:12px;gap:6px 14px}
+    .nh-clock{font-size:24px}
+    .nh-status{font-size:13.5px}
+    .now-cards{grid-template-columns:repeat(auto-fill,minmax(148px,1fr));padding:10px;gap:7px}
+    .now-panel .tilegrid{padding:10px}
+    .now-panel h3{padding:10px 12px}
+  }
+
   /* browser Print path = B&W landscape (the PDF button is the primary export) */
   #printRoot{display:none}
   @media print{
@@ -270,7 +374,7 @@
       <button class="only-btn" id="onlyBtn">Show only…</button>
       <div class="only-panel" id="onlyPanel" style="display:none"></div>
     </div>
-    <div class="filter"><input id="filter" placeholder="Filter…" autocomplete="off"></div>
+    <div class="filter"><input id="filter" type="search" placeholder="Filter… e.g. Kelly, Hobson" autocomplete="off" autocapitalize="off" spellcheck="false" title="Separate several names with commas"></div>
     <span class="count" id="count"></span>
     <button class="link" id="clearF" style="display:none">Clear</button>
   </div>
@@ -306,11 +410,13 @@ const S = {
   "305",
   "306",
   "Commons",
+  "Field",
   "Modular 2",
   "Shop"
  ],
  "non_bookable_rooms": [
-  "Commons"
+  "Commons",
+  "Field"
  ],
  "period_slots": [
   {
@@ -404,16 +510,6 @@ const S = {
    "row_group_start": 1
   },
   {
-   "id": "Tue_Period_2",
-   "day": "Tue",
-   "label": "Period 2",
-   "block": "B",
-   "minutes": 75,
-   "time": "10:15-11:30",
-   "grade_group": "912",
-   "row_group_start": 2
-  },
-  {
    "id": "Tue_Period_2_78",
    "day": "Tue",
    "label": "Period 2",
@@ -421,6 +517,16 @@ const S = {
    "minutes": 75,
    "time": "10:15-11:05",
    "grade_group": "78",
+   "row_group_start": 2
+  },
+  {
+   "id": "Tue_Period_2",
+   "day": "Tue",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:30",
+   "grade_group": "912",
    "row_group_start": 3
   },
   {
@@ -434,6 +540,16 @@ const S = {
    "row_group_start": 4
   },
   {
+   "id": "Tue_Flex_A_912",
+   "day": "Tue",
+   "label": "Flex A",
+   "block": null,
+   "minutes": 50,
+   "time": "11:35-12:00",
+   "grade_group": "912",
+   "row_group_start": 5
+  },
+  {
    "id": "Tue_Flex_A",
    "day": "Tue",
    "label": "Flex A",
@@ -441,7 +557,17 @@ const S = {
    "minutes": 50,
    "time": "11:35-12:25",
    "grade_group": "all",
-   "row_group_start": 5
+   "row_group_start": 6
+  },
+  {
+   "id": "Tue_Flex_A_912_720",
+   "day": "Tue",
+   "label": "Flex A",
+   "block": null,
+   "minutes": 50,
+   "time": "12:00-12:25",
+   "grade_group": "912",
+   "row_group_start": 7
   },
   {
    "id": "Tue_Block_C_912",
@@ -449,9 +575,19 @@ const S = {
    "label": "Block C",
    "block": "C",
    "minutes": 75,
+   "time": "1:05-1:55",
+   "grade_group": "912",
+   "row_group_start": 8
+  },
+  {
+   "id": "Tue_Block_C_912_785",
+   "day": "Tue",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
    "time": "1:05-2:20",
    "grade_group": "912",
-   "row_group_start": 6
+   "row_group_start": 9
   },
   {
    "id": "Tue_Practica_A",
@@ -461,7 +597,17 @@ const S = {
    "minutes": 50,
    "time": "1:05-1:55",
    "grade_group": "78",
-   "row_group_start": 7
+   "row_group_start": 10
+  },
+  {
+   "id": "Tue_Block_C_912_835",
+   "day": "Tue",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "1:55-2:20",
+   "grade_group": "912",
+   "row_group_start": 11
   },
   {
    "id": "Tue_Block_C",
@@ -471,7 +617,7 @@ const S = {
    "minutes": 75,
    "time": "2:00-3:15",
    "grade_group": "78",
-   "row_group_start": 8
+   "row_group_start": 12
   },
   {
    "id": "Tue_Practica_B",
@@ -481,7 +627,7 @@ const S = {
    "minutes": 50,
    "time": "2:25-3:15",
    "grade_group": "912",
-   "row_group_start": 9
+   "row_group_start": 13
   },
   {
    "id": "Wed_Flex_B",
@@ -524,16 +670,6 @@ const S = {
    "row_group_start": 3
   },
   {
-   "id": "Wed_Period_2",
-   "day": "Wed",
-   "label": "Period 2",
-   "block": "E",
-   "minutes": 75,
-   "time": "10:45-12:00",
-   "grade_group": "all",
-   "row_group_start": 4
-  },
-  {
    "id": "Wed_Period_2_78",
    "day": "Wed",
    "label": "Period 2",
@@ -541,6 +677,16 @@ const S = {
    "minutes": 75,
    "time": "10:45-11:35",
    "grade_group": "78",
+   "row_group_start": 4
+  },
+  {
+   "id": "Wed_Period_2",
+   "day": "Wed",
+   "label": "Period 2",
+   "block": "E",
+   "minutes": 75,
+   "time": "10:45-12:00",
+   "grade_group": "all",
    "row_group_start": 5
   },
   {
@@ -594,16 +740,6 @@ const S = {
    "row_group_start": 1
   },
   {
-   "id": "Thu_Period_2",
-   "day": "Thu",
-   "label": "Period 2",
-   "block": "B",
-   "minutes": 75,
-   "time": "10:15-11:30",
-   "grade_group": "912",
-   "row_group_start": 2
-  },
-  {
    "id": "Thu_Period_2_78",
    "day": "Thu",
    "label": "Period 2",
@@ -611,6 +747,16 @@ const S = {
    "minutes": 75,
    "time": "10:15-11:05",
    "grade_group": "78",
+   "row_group_start": 2
+  },
+  {
+   "id": "Thu_Period_2",
+   "day": "Thu",
+   "label": "Period 2",
+   "block": "B",
+   "minutes": 75,
+   "time": "10:15-11:30",
+   "grade_group": "912",
    "row_group_start": 3
   },
   {
@@ -639,9 +785,19 @@ const S = {
    "label": "Block C",
    "block": "C",
    "minutes": 75,
-   "time": "1:05-2:20",
+   "time": "1:05-1:55",
    "grade_group": "912",
    "row_group_start": 6
+  },
+  {
+   "id": "Thu_Block_C_912_785",
+   "day": "Thu",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "1:05-2:20",
+   "grade_group": "912",
+   "row_group_start": 7
   },
   {
    "id": "Thu_Practica_A",
@@ -651,7 +807,17 @@ const S = {
    "minutes": 50,
    "time": "1:05-1:55",
    "grade_group": "78",
-   "row_group_start": 7
+   "row_group_start": 8
+  },
+  {
+   "id": "Thu_Block_C_912_835",
+   "day": "Thu",
+   "label": "Block C",
+   "block": "C",
+   "minutes": 75,
+   "time": "1:55-2:20",
+   "grade_group": "912",
+   "row_group_start": 9
   },
   {
    "id": "Thu_Block_C",
@@ -661,7 +827,7 @@ const S = {
    "minutes": 75,
    "time": "2:00-3:15",
    "grade_group": "78",
-   "row_group_start": 8
+   "row_group_start": 10
   },
   {
    "id": "Thu_Practica_B",
@@ -671,7 +837,7 @@ const S = {
    "minutes": 50,
    "time": "2:25-3:15",
    "grade_group": "912",
-   "row_group_start": 9
+   "row_group_start": 11
   },
   {
    "id": "Fri_Opening",
@@ -1059,7 +1225,7 @@ const S = {
     },
     {
      "day": "Tue",
-     "period_id": "Tue_Block_C_912",
+     "period_id": "Tue_Block_C_912_785",
      "period_label": "Block C",
      "period_block": "C",
      "period_minutes": 75,
@@ -1075,7 +1241,7 @@ const S = {
     },
     {
      "day": "Thu",
-     "period_id": "Thu_Block_C_912",
+     "period_id": "Thu_Block_C_912_785",
      "period_label": "Block C",
      "period_block": "C",
      "period_minutes": 75,
@@ -1358,6 +1524,38 @@ const S = {
    "locked": false
   },
   {
+   "id": "11_ap_calculus_kelly",
+   "subject": "11 AP Calculus",
+   "teachers": [
+    "Kelly"
+   ],
+   "grades": [
+    "11"
+   ],
+   "rooms": [
+    "108"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Flex_A_912_720",
+     "period_label": "Flex A",
+     "period_block": null,
+     "period_minutes": 25,
+     "grade_rows": [
+      "11"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r227",
+     "room": "108",
+     "time": "12:00-12:25",
+     "raw": "11 AP Calculus - Kelly - 108"
+    }
+   ],
+   "locked": false
+  },
+  {
    "id": "11_chemistry_k_marks",
    "subject": "11 Chemistry",
    "teachers": [
@@ -1388,7 +1586,7 @@ const S = {
     },
     {
      "day": "Tue",
-     "period_id": "Tue_Block_C_912",
+     "period_id": "Tue_Block_C_912_785",
      "period_label": "Block C",
      "period_block": "C",
      "period_minutes": 75,
@@ -1404,7 +1602,7 @@ const S = {
     },
     {
      "day": "Thu",
-     "period_id": "Thu_Block_C_912",
+     "period_id": "Thu_Block_C_912_785",
      "period_label": "Block C",
      "period_block": "C",
      "period_minutes": 75,
@@ -1836,10 +2034,10 @@ const S = {
    "sessions": [
     {
      "day": "Tue",
-     "period_id": "Tue_Flex_A",
+     "period_id": "Tue_Flex_A_912",
      "period_label": "Flex A",
      "period_block": null,
-     "period_minutes": 50,
+     "period_minutes": 25,
      "grade_rows": [
       "11"
      ],
@@ -1847,7 +2045,7 @@ const S = {
      "paired_with": [],
      "session_id": "r197",
      "room": "208",
-     "time": "11:35-12:25",
+     "time": "11:35-12:00",
      "raw": "11 Study - Bowling - 208"
     }
    ],
@@ -2156,7 +2354,7 @@ const S = {
    "sessions": [
     {
      "day": "Thu",
-     "period_id": "Thu_Block_C_912",
+     "period_id": "Thu_Block_C_912_785",
      "period_label": "Block C",
      "period_block": "C",
      "period_minutes": 75,
@@ -4691,7 +4889,7 @@ const S = {
     "9"
    ],
    "rooms": [
-    "203/205"
+    "203"
    ],
    "sessions": [
     {
@@ -4706,9 +4904,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r34",
-     "room": "203/205",
-     "time": "1:05-2:20",
-     "raw": "9 Bible - Crim - 203/205"
+     "room": "203",
+     "time": "1:05-1:55",
+     "raw": "9 Bible - Crim - 203"
     },
     {
      "day": "Thu",
@@ -4722,9 +4920,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r37",
-     "room": "203/205",
-     "time": "1:05-2:20",
-     "raw": "9 Bible - Crim - 203/205"
+     "room": "203",
+     "time": "1:05-1:55",
+     "raw": "9 Bible - Crim - 203"
     }
    ],
    "locked": false
@@ -4739,7 +4937,7 @@ const S = {
     "9"
    ],
    "rooms": [
-    "203/205"
+    "205"
    ],
    "sessions": [
     {
@@ -4754,9 +4952,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r97",
-     "room": "203/205",
-     "time": "1:05-2:20",
-     "raw": "9 Bible - Hooks - 203/205"
+     "room": "205",
+     "time": "1:05-1:55",
+     "raw": "9 Bible - Hooks - 205"
     },
     {
      "day": "Thu",
@@ -4770,9 +4968,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r100",
-     "room": "203/205",
-     "time": "1:05-2:20",
-     "raw": "9 Bible - Hooks - 203/205"
+     "room": "205",
+     "time": "1:05-1:55",
+     "raw": "9 Bible - Hooks - 205"
     }
    ],
    "locked": false
@@ -5034,16 +5232,16 @@ const S = {
    "locked": false
   },
   {
-   "id": "9_language_study_turek",
+   "id": "9_language_study_hanbury",
    "subject": "9 Language Study",
    "teachers": [
-    "Turek"
+    "Hanbury"
    ],
    "grades": [
     "9"
    ],
    "rooms": [
-    "208"
+    "302"
    ],
    "sessions": [
     {
@@ -5058,9 +5256,9 @@ const S = {
      "grade_group": "912",
      "paired_with": [],
      "session_id": "r191",
-     "room": "208",
+     "room": "302",
      "time": "9:40-10:05",
-     "raw": "9 Language Study - Turek - 208"
+     "raw": "9 Language Study - Hanbury - 302"
     }
    ],
    "locked": false
@@ -5290,6 +5488,70 @@ const S = {
    "locked": false
   },
   {
+   "id": "9_study_proffitt",
+   "subject": "9 Study",
+   "teachers": [
+    "Proffitt"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "203/205"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Block_C_912_835",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 25,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r225",
+     "room": "203/205",
+     "time": "1:55-2:20",
+     "raw": "9 Study - Proffitt - 203/205"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "9_study_stover",
+   "subject": "9 Study",
+   "teachers": [
+    "Stover"
+   ],
+   "grades": [
+    "9"
+   ],
+   "rooms": [
+    "203/205"
+   ],
+   "sessions": [
+    {
+     "day": "Thu",
+     "period_id": "Thu_Block_C_912_835",
+     "period_label": "Block C",
+     "period_block": "C",
+     "period_minutes": 25,
+     "grade_rows": [
+      "9"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r226",
+     "room": "203/205",
+     "time": "1:55-2:20",
+     "raw": "9 Study - Stover - 203/205"
+    }
+   ],
+   "locked": false
+  },
+  {
    "id": "as_practica_ballington",
    "subject": "AS Practica",
    "teachers": [
@@ -5399,6 +5661,63 @@ const S = {
      "room": "Modular 2",
      "time": "2:25-3:15",
      "raw": "AS Practica - Shuler - Modular 2"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "archery_k_marks",
+   "subject": "Archery",
+   "teachers": [
+    "K. Marks"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "Shop"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r232",
+     "room": "Shop",
+     "time": "2:25-3:15",
+     "raw": "Archery - K. Marks - Shop"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r233",
+     "room": "Shop",
+     "time": "2:25-3:15",
+     "raw": "Archery - K. Marks - Shop"
     }
    ],
    "locked": false
@@ -5575,6 +5894,348 @@ const S = {
    "locked": false
   },
   {
+   "id": "fabric_arts_wilkinson",
+   "subject": "Fabric Arts",
+   "teachers": [
+    "Wilkinson"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "203"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r230",
+     "room": "203",
+     "time": "2:25-3:15",
+     "raw": "Fabric Arts - Wilkinson - 203"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r231",
+     "room": "203",
+     "time": "2:25-3:15",
+     "raw": "Fabric Arts - Wilkinson - 203"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "improvisation_hobson",
+   "subject": "Improvisation",
+   "teachers": [
+    "Hobson"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "305"
+   ],
+   "sessions": [
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r238",
+     "room": "305",
+     "time": "2:25-3:15",
+     "raw": "Improvisation - Hobson - 305"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r239",
+     "room": "305",
+     "time": "2:25-3:15",
+     "raw": "Improvisation - Hobson - 305"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "intro_to_art_tolley",
+   "subject": "Intro to Art",
+   "teachers": [
+    "Tolley"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "106"
+   ],
+   "sessions": [
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r240",
+     "room": "106",
+     "time": "2:25-3:15",
+     "raw": "Intro to Art - Tolley - 106"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r241",
+     "room": "106",
+     "time": "2:25-3:15",
+     "raw": "Intro to Art - Tolley - 106"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "journalism_bowling",
+   "subject": "Journalism",
+   "teachers": [
+    "Bowling"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "208"
+   ],
+   "sessions": [
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r236",
+     "room": "208",
+     "time": "2:25-3:15",
+     "raw": "Journalism - Bowling - 208"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r237",
+     "room": "208",
+     "time": "2:25-3:15",
+     "raw": "Journalism - Bowling - 208"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "printmaking_schultz",
+   "subject": "Printmaking",
+   "teachers": [
+    "Schultz"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "106"
+   ],
+   "sessions": [
+    {
+     "day": "Tue",
+     "period_id": "Tue_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r228",
+     "room": "106",
+     "time": "2:25-3:15",
+     "raw": "Printmaking - Schultz - 106"
+    },
+    {
+     "day": "Thu",
+     "period_id": "Thu_Practica_B",
+     "period_label": "Practica B",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r229",
+     "room": "106",
+     "time": "2:25-3:15",
+     "raw": "Printmaking - Schultz - 106"
+    }
+   ],
+   "locked": false
+  },
+  {
+   "id": "team_sports_stover",
+   "subject": "Team Sports",
+   "teachers": [
+    "Stover"
+   ],
+   "grades": [
+    "9",
+    "10",
+    "11",
+    "12"
+   ],
+   "rooms": [
+    "Field"
+   ],
+   "sessions": [
+    {
+     "day": "Wed",
+     "period_id": "Wed_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r234",
+     "room": "Field",
+     "time": "2:25-3:15",
+     "raw": "Team Sports - Stover - Field"
+    },
+    {
+     "day": "Fri",
+     "period_id": "Fri_PRAC_2",
+     "period_label": "PRAC 2",
+     "period_block": null,
+     "period_minutes": 50,
+     "grade_rows": [
+      "9",
+      "10",
+      "11",
+      "12"
+     ],
+     "grade_group": "912",
+     "paired_with": [],
+     "session_id": "r235",
+     "room": "Field",
+     "time": "2:25-3:15",
+     "raw": "Team Sports - Stover - Field"
+    }
+   ],
+   "locked": false
+  },
+  {
    "id": "12_study_tbd",
    "subject": "12 Study",
    "teachers": [
@@ -5599,7 +6260,7 @@ const S = {
      "paired_with": [],
      "session_id": "12_study_tbd_Tue_Block_C",
      "room": null,
-     "time": "1:05-2:20",
+     "time": "1:05-1:55",
      "raw": "12 Study - TBD"
     }
    ],
@@ -5690,11 +6351,13 @@ const S = {
   "K. Marks",
   "Kelly",
   "Proffitt",
+  "Schultz",
   "Shuler",
   "Stover",
   "Sutton",
   "Tolley",
-  "Turek"
+  "Turek",
+  "Wilkinson"
  ],
  "faculty_groups": {
   "faculty": [
@@ -5718,8 +6381,10 @@ const S = {
    "Cooper",
    "Crim",
    "Edwards",
+   "Schultz",
    "Shuler",
-   "Tolley"
+   "Tolley",
+   "Wilkinson"
   ]
  },
  "grade_rows": [
@@ -5838,6 +6503,18 @@ function sessFor(kind,key){
   return SESSIONS.filter(s=>s.grades.includes(key));}
 function overlaps(aS,aE,bS,bE){return aS!=null&&bS!=null&&aS<bE&&bS<aE;}
 
+/* ---------- clickable entity links ----------
+   Anything rendered through go() opens that entity's Week view (one delegated
+   click handler on #main). A class name opens its grade(s), a teacher opens the
+   teacher, a room opens the room. Keys are '|'-joined so a 9-12 elective opens
+   all four grades and a divided "203/205" opens both rooms. */
+function gradesOf(s){return (s.grades||[]).filter(g=>GRADES.includes(g));}
+function go(kind,keys,text){keys=[].concat(keys).filter(Boolean);if(!keys.length)return esc(text);
+  return `<span class="go" data-go="${kind}" data-k="${esc(keys.join('|'))}">${esc(text)}</span>`;}
+function goTeachers(ts){return ts.filter(t=>t!=='TBD').map(t=>go('teacher',t,t)).join(', ');}
+function goRoom(r){const a=atom(r).filter(x=>ATOMIC_ROOMS.includes(x));return a.length?go('room',a,roomLabel(r)):esc(roomLabel(r));}
+function entLabel(kind,e){return kind==='room'?roomLabel(e):e;}
+
 /* ---------- colors ---------- */
 const GC={'7A':'--g7a','7B':'--g7b','8':'--g8','9':'--g9','10':'--g10','11':'--g11','12':'--g12'};
 /* RGB (0-1) mirror of the CSS grade palette, for the color PDF fills. */
@@ -5900,11 +6577,12 @@ function cellInner(kind,key,b,day){
       /* one flowing meta line: teacher(s) (room/grade views) + "Room N" —
          flows under the name so long room labels never clip the class name */
       const parts=[];
-      if(kind==='room'||kind==='grade'){const w=s.teachers.filter(t=>t!=='TBD').join(', ');if(w)parts.push(w);}
-      if(kind!=='room'&&s.room)parts.push(roomLabel(s.room));
+      if(kind==='room'||kind==='grade'){const w=goTeachers(s.teachers);if(w)parts.push(w);}
+      if(kind!=='room'&&s.room)parts.push(goRoom(s.room));
       const meta=parts.join(' · ');
+      const nm=kind==='grade'?esc(s.subject):go('grade',gradesOf(s),s.subject);
       const pt=many?`<span class="pt">${fmtT(s.start)}–${fmtT(s.end)}</span>`:'';
-      return `<div class="blkc cls-w${many?' sub':''}" style="background:${st.bg}"><span class="nm">${esc(s.subject)}</span>${meta?`<span class="sub2">${esc(meta)}</span>`:''}${pt}</div>`;
+      return `<div class="blkc cls-w${many?' sub':''}" style="background:${st.bg}"><span class="nm">${nm}</span>${meta?`<span class="sub2">${meta}</span>`:''}${pt}</div>`;
     }).join('');
   }
   if(ALLSCHOOL[b.label])return `<div class="blkc allschool"><span class="nm">${esc(ALLSCHOOL[b.label])}</span></div>`;
@@ -5924,19 +6602,31 @@ function cellClass(kind,key,b,day){
 
 /* ---------- state ---------- */
 const state={view:'now',day:DAYS[0],filter:'',only:new Set(),showPanel:false,
-  admin:false,adminUnlocked:false,find:{day:DAYS[0],period:null},
+  admin:false,adminUnlocked:false,find:{day:nowDT().dayName||DAYS[0],periods:[],multi:false,onlyAll:false},
   compare:[{kind:'teacher',key:TEACHERS[0]},{kind:'room',key:ATOMIC_ROOMS[0]}]};
 function entities(v){return v==='teacher'?TEACHERS:v==='room'?ATOMIC_ROOMS:GRADES;}
 function focused(){return state.only.size>0;}
 function shown(){
   let list=entities(state.view);
   if(focused())list=list.filter(e=>state.only.has(e));
-  const f=state.filter.trim().toLowerCase();
-  if(f)list=list.filter(e=>e.toLowerCase().includes(f));
+  const terms=filterTerms(state.view);
+  if(terms.length)list=list.filter(e=>termHit(state.view,e,terms));
   return list;
 }
+/* Several names at once: "Kelly, Hobson, Corley" (commas, ;, + or "and").
+   With no separator, the whole string is tried first ("E. Marks", "Modular 2");
+   if that matches nothing, it falls back to one term per word ("Kelly Hobson"). */
+function termHit(kind,e,terms){const a=e.toLowerCase(),b=entLabel(kind,e).toLowerCase();return terms.some(t=>a.includes(t)||b.includes(t));}
+function filterTerms(kind){
+  const raw=state.filter.trim().toLowerCase();if(!raw)return[];
+  const split=raw.split(/\s*(?:,|;|\+|&|\band\b)\s*/).map(t=>t.trim()).filter(Boolean);
+  if(split.length>1)return split;
+  if(/\s/.test(raw)&&!entities(kind).some(e=>termHit(kind,e,[raw])))
+    return raw.split(/\s+/).filter(t=>t&&!['room','rm','rm.','and'].includes(t));
+  return [raw];
+}
 /* focused (subset) comparison drops non-teaching columns; full grid keeps them */
-function colsForDay(day,g){const c=dayBlocks(day).filter(b=>blockMatchesGG(b,g));return focused()?c.filter(b=>!NONTEACH.test(b.label)):c;}
+function colsForDay(day,g){const c=dayBlocks(day).filter(b=>blockMatchesGG(b,g));return (focused()||filterTerms(state.view).length>1)?c.filter(b=>!NONTEACH.test(b.label)):c;}
 
 function rowMeta(kind,key){
   if(kind==='teacher'){const cs=sessFor('teacher',key);return `${cs.length}× · ${cs.reduce((a,s)=>a+(s.minutes||0),0)}m`;}
@@ -5945,8 +6635,10 @@ function rowMeta(kind,key){
 }
 
 /* ---------- matrix ---------- */
+const PHONE=window.matchMedia('(max-width:700px)');
 function renderMatrix(){
   const kind=state.view,keys=shown();
+  if(PHONE.matches&&keys.length&&keys.length<=4)return renderMatrixTP(kind,keys);
   /* one column per canonical block */
   const cols=colsForDay(state.day,null);
   let head='<tr><th class="corner">'+({teacher:'Teacher',room:'Room',grade:'Grade'}[kind])+'</th>';
@@ -5966,6 +6658,19 @@ function renderMatrix(){
   const admin=(state.admin&&typeof renderAdmin==='function')?renderAdmin(kind):'';
   document.getElementById('main').innerHTML=admin+`<div class="gridcard"><table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
   document.querySelectorAll('th.rowhead').forEach(th=>th.onclick=()=>{toggleOnly(th.dataset.e);});
+}
+/* Phones comparing a few entities on one day: periods run DOWN, entities ACROSS,
+   so 2–4 schedules sit side by side without a sideways scroll. */
+function renderMatrixTP(kind,keys){
+  const cols=colsForDay(state.day,null);
+  let head='<tr><th class="corner">'+esc(state.day)+'</th>'+keys.map(k=>
+    `<th class="colhead${state.only.has(k)?' pinned':''}" data-e="${esc(k)}"><div class="rn">${esc(entLabel(kind,k))}</div><span class="rm">${esc(rowMeta(kind,k))}</span></th>`).join('')+'</tr>';
+  const body=cols.map(c=>{const blk=c.block?`<span class="blk">${c.block}</span>`:'';
+    return `<tr><th class="rowhead" style="cursor:default"><div class="rn" style="font-size:12.5px">${blk}${esc(c.label)}</div><span class="rm">${c.time}</span></th>`+
+      keys.map(k=>`<td class="${cellClass(kind,k,c,state.day)}">${cellInner(kind,k,c,state.day)}</td>`).join('')+'</tr>';}).join('');
+  const admin=(state.admin&&typeof renderAdmin==='function')?renderAdmin(kind):'';
+  document.getElementById('main').innerHTML=admin+`<div class="gridcard"><table class="grid tp"><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  document.querySelectorAll('th.colhead').forEach(th=>th.onclick=()=>{toggleOnly(th.dataset.e);});
 }
 
 function toggleOnly(e){state.only.has(e)?state.only.delete(e):state.only.add(e);syncOnlyDay();renderControls();renderMain();}
@@ -6010,10 +6715,10 @@ function renderCompare(){
     <div class="cmp-bar"><div class="cmp-panes">${bar}</div>${add}</div>
     <div class="wk-cards cmp-cards">${cards}</div>`;
   document.querySelectorAll('.cmp-kind').forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.i;
-    state.compare[i]={kind:sel.value,key:entities(sel.value)[0]};renderCompare();});
-  document.querySelectorAll('.cmp-entity').forEach(sel=>sel.onchange=()=>{state.compare[+sel.dataset.i].key=sel.value;renderCompare();});
-  document.querySelectorAll('.cmp-remove').forEach(b=>b.onclick=()=>{state.compare.splice(+b.dataset.i,1);renderCompare();});
-  const a=document.querySelector('.cmp-add');if(a)a.onclick=()=>{state.compare.push({kind:'grade',key:entities('grade')[0]});renderCompare();};
+    state.compare[i]={kind:sel.value,key:entities(sel.value)[0]};renderMain();});
+  document.querySelectorAll('.cmp-entity').forEach(sel=>sel.onchange=()=>{state.compare[+sel.dataset.i].key=sel.value;renderMain();});
+  document.querySelectorAll('.cmp-remove').forEach(b=>b.onclick=()=>{state.compare.splice(+b.dataset.i,1);renderMain();});
+  const a=document.querySelector('.cmp-add');if(a)a.onclick=()=>{state.compare.push({kind:'grade',key:entities('grade')[0]});renderMain();};
 }
 
 /* ---------- controls ---------- */
@@ -6056,42 +6761,83 @@ function renderOnlyPanel(){
 /* ---------- Find Open ---------- */
 function roomOccupant(room,day,st,en){return SESSIONS.find(s=>s.day===day&&overlaps(s.start,s.end,st,en)&&atom(s.room).includes(room));}
 function teacherOccupant(t,day,st,en){return SESSIONS.find(s=>s.day===day&&overlaps(s.start,s.end,st,en)&&s.teachers.includes(t));}
+/* Default period when Find Open lands on a day: the one in progress (or next)
+   if that day is today, else the first teaching block. */
+function defaultFindPeriod(day,opts){
+  const n=nowDT();
+  if(n.dayName===day){const cur=opts.find(o=>o.start<=n.t&&n.t<o.end)||opts.find(o=>o.start>n.t);if(cur)return cur.id;}
+  return opts[0].id;
+}
 function renderFind(){
   const f=state.find,opts=dayTeachingBlocks(f.day,null).map(b=>({id:blockKey(b),label:b.label,time:b.time,start:b.start,end:b.end,
     grade_group:[...new Set(b.members.map(m=>normGG(m.grade_group)))].filter(x=>x!=='all')[0]||'all'}));
-  if(!opts.find(o=>o.id===f.period))f.period=opts.length?opts[0].id:null;
-  const sl=opts.find(o=>o.id===f.period)?Object.assign({day:f.day},opts.find(o=>o.id===f.period)):null;
+  f.periods=f.periods.filter(id=>opts.some(o=>o.id===id));
+  if(!f.multi&&f.periods.length>1)f.periods=f.periods.slice(0,1);
+  if(!f.periods.length&&opts.length)f.periods=[defaultFindPeriod(f.day,opts)];
+  const sel=opts.filter(o=>f.periods.includes(o.id));            // time order
   const dayPills=DAYS.map(d=>`<button class="fd-day ${d===f.day?'on':''}" data-fd="${d}">${d}</button>`).join('');
-  const perPills=opts.map(o=>`<button class="fd-per ${o.id===f.period?'on':''}" data-fp="${o.id}"><b>${o.label}</b><span>${o.time}${normGG(o.grade_group)!=='all'?' · '+ggLabel(o.grade_group):''}</span></button>`).join('');
+  const perPills=opts.map(o=>`<button class="fd-per ${f.periods.includes(o.id)?'on':''}" data-fp="${esc(o.id)}"><b><i class="ck"></i>${esc(o.label)}</b><span>${o.time}${normGG(o.grade_group)!=='all'?' · '+ggLabel(o.grade_group):''}</span></button>`).join('');
+  const mode=`<div class="fd-mode"><button class="fd-chip ${f.multi?'on':''}" data-fm title="Pick several periods and see who/what is open across all of them">${f.multi?'✓ ':''}Multiple periods</button>${f.multi?`<button class="fd-chip" data-fall>All day</button>`:''}</div>`;
+  // Find Open covers faculty only — adjuncts aren't part of the coverage pool.
+  const faculty=TEACHERS.filter(t=>FACULTY.has(t));
   let board='';
-  if(sl){
+  if(sel.length===1){
+    const sl=Object.assign({day:f.day},sel[0]);
     const openR=ATOMIC_ROOMS.filter(r=>!roomOccupant(r,sl.day,sl.start,sl.end));
-    // Find Open covers faculty only — adjuncts aren't part of the coverage pool.
-    const faculty=TEACHERS.filter(t=>FACULTY.has(t));
     const freeN=faculty.filter(t=>!teacherOccupant(t,sl.day,sl.start,sl.end)).length;
     const roomTiles=ATOMIC_ROOMS.map(r=>{
       const o=roomOccupant(r,sl.day,sl.start,sl.end);
-      if(!o)return `<div class="tile r-open"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-s">Open</span></div>`;
-      return `<div class="tile r-busy"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-c">${esc(o.subject)}</span><span class="tl-w">${esc(o.teachers.filter(t=>t!=='TBD').join(', '))}</span></div>`;
+      if(!o)return `<div class="tile r-open" data-go="room" data-k="${esc(r)}"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-s">Open</span></div>`;
+      return `<div class="tile r-busy" data-go="room" data-k="${esc(r)}"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-c">${go('grade',gradesOf(o),o.subject)}</span><span class="tl-w">${goTeachers(o.teachers)}</span></div>`;
     }).join('');
     const teachTiles=faculty.map(t=>{
       const o=teacherOccupant(t,sl.day,sl.start,sl.end);
-      if(!o)return `<div class="tile t-free"><span class="tl-h">${t}</span><span class="tl-s">Free</span></div>`;
-      return `<div class="tile t-busy"><span class="tl-h">${t}</span><span class="tl-c">${esc(o.subject)}${o.room?' · '+esc(o.room):''}</span></div>`;
+      if(!o)return `<div class="tile t-free" data-go="teacher" data-k="${esc(t)}"><span class="tl-h">${esc(t)}</span><span class="tl-s">Free</span></div>`;
+      return `<div class="tile t-busy" data-go="teacher" data-k="${esc(t)}"><span class="tl-h">${esc(t)}</span><span class="tl-c">${go('grade',gradesOf(o),o.subject)}${o.room?' · '+goRoom(o.room):''}</span></div>`;
     }).join('');
     board=`
-      <div class="fd-summary"><span class="fd-when">${sl.label} · ${sl.time}</span>
+      <div class="fd-summary"><span class="fd-when">${esc(sl.label)} · ${sl.time}</span>
         <span class="fd-stat"><b>${openR.length}</b> of ${ATOMIC_ROOMS.length} rooms open</span>
         <span class="fd-stat"><b>${freeN}</b> of ${faculty.length} faculty free</span></div>
       <div class="fd-section"><h3>Rooms</h3><div class="tilegrid">${roomTiles}</div></div>
-      <div class="fd-section"><h3>Faculty</h3><div class="tilegrid">${teachTiles}</div></div>
-      <p class="desc" style="margin-top:14px">Availability is by <b>time overlap</b>, so concurrent Practica / Block C periods are exact. Commons and roomless Study slots aren't counted as bookable rooms. To cover an absent teacher, pick their class's period — every <b>Free</b> teacher is a candidate.</p>`;
+      <div class="fd-section"><h3>Faculty</h3><div class="tilegrid">${teachTiles}</div></div>`;
+  }else if(sel.length>1){
+    /* one row per room / faculty member, one column per selected period */
+    const N=sel.length,from=fmtT(Math.min(...sel.map(o=>o.start))),to=fmtT(Math.max(...sel.map(o=>o.end)));
+    const rows=(keys,occFn)=>keys.map(k=>{const occ=sel.map(o=>occFn(k,f.day,o.start,o.end));return{k,occ,n:occ.filter(x=>!x).length};});
+    const roomRows=rows(ATOMIC_ROOMS,roomOccupant),facRows=rows(faculty,teacherOccupant);
+    const allR=roomRows.filter(x=>x.n===N).length,allF=facRows.filter(x=>x.n===N).length;
+    const head=lab=>`<tr><th class="avh">${lab}</th>${sel.map(o=>`<th>${esc(o.label)}<span>${o.time}</span></th>`).join('')}</tr>`;
+    const table=(rs,kind)=>{
+      const vis=f.onlyAll?rs.filter(x=>x.n===N):rs;
+      if(!vis.length)return `<div class="empty">None open for all ${N} periods.</div>`;
+      const word=kind==='room'?'open':'free';
+      const body=vis.map(x=>`<tr><th class="avh${x.n===N?' all':''}" data-go="${kind}" data-k="${esc(x.k)}">${esc(entLabel(kind,x.k))}<span class="n">${x.n===N?word+' all '+N:x.n+' of '+N+' '+word}</span></th>${
+        x.occ.map(o=>o?`<td><div class="av-b"><b>${go('grade',gradesOf(o),o.subject)}</b>${kind==='room'?goTeachers(o.teachers):(o.room?goRoom(o.room):'')}</div></td>`
+                     :`<td><div class="${kind==='room'?'av-o':'av-f'}">${kind==='room'?'Open':'Free'}</div></td>`).join('')}</tr>`).join('');
+      return `<div class="av-wrap"><table class="av"><thead>${head(kind==='room'?'Room':'Faculty')}</thead><tbody>${body}</tbody></table></div>`;
+    };
+    board=`
+      <div class="fd-summary"><span class="fd-when">${f.day} · ${N} periods · ${from}–${to}</span>
+        <span class="fd-stat"><b>${allR}</b> rooms open for all ${N}</span>
+        <span class="fd-stat"><b>${allF}</b> faculty free for all ${N}</span>
+        <label class="fd-only"><input type="checkbox" id="fdOnlyAll" ${f.onlyAll?'checked':''}> Only show open for all</label></div>
+      <div class="fd-section"><h3>Rooms</h3>${table(roomRows,'room')}</div>
+      <div class="fd-section"><h3>Faculty</h3>${table(facRows,'teacher')}</div>`;
   }
+  if(board)board+=`<p class="desc" style="margin-top:14px">Availability is by <b>time overlap</b>, so concurrent Practica / Block C periods are exact. Commons and roomless Study slots aren't counted as bookable rooms. To cover an absent teacher, pick their class's period — every <b>Free</b> teacher is a candidate. Tap any room, teacher or class to open its week.</p>`;
   document.getElementById('main').innerHTML=`
-    <div class="avail fd"><div class="fd-head"><h2>Find Open</h2><div class="fd-days">${dayPills}</div></div>
-      <div class="fd-pers">${perPills}</div>${board}</div>`;
-  document.querySelectorAll('[data-fd]').forEach(b=>b.onclick=()=>{f.day=b.dataset.fd;f.period=null;renderMain();});
-  document.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>{f.period=b.dataset.fp;renderMain();});
+    <div class="avail fd${f.multi?' fd-multi':''}"><div class="fd-head"><h2>Find Open</h2><div class="fd-days">${dayPills}</div></div>
+      <div class="fd-pers">${perPills}${mode}</div>${board}</div>`;
+  document.querySelectorAll('[data-fd]').forEach(b=>b.onclick=()=>{f.day=b.dataset.fd;f.periods=[];renderMain();});
+  document.querySelectorAll('[data-fp]').forEach(b=>b.onclick=()=>{const id=b.dataset.fp;
+    if(!f.multi)f.periods=[id];
+    else if(f.periods.includes(id)){if(f.periods.length>1)f.periods=f.periods.filter(x=>x!==id);}
+    else f.periods=[...f.periods,id];
+    renderMain();});
+  const fm=document.querySelector('[data-fm]');if(fm)fm.onclick=()=>{f.multi=!f.multi;renderMain();};
+  const fa=document.querySelector('[data-fall]');if(fa)fa.onclick=()=>{f.periods=opts.map(o=>o.id);renderMain();};
+  const oa=document.getElementById('fdOnlyAll');if(oa)oa.onchange=()=>{f.onlyAll=oa.checked;renderMain();};
 }
 
 /* ---------- browser Print pages (B&W) ---------- */
@@ -6266,17 +7012,21 @@ function headSpanFor(st,now){
   if(st.day===nowDT().dayName && st.t>ex) return 'in '+Math.max(0,Math.ceil(st.t-ex))+' min';
   return '—';
 }
-function openEntity(kind,key){
-  state.view=kind;state.only=new Set([key]);state.day='Week';state.filter='';
+function openEntity(kind,keys){
+  keys=[].concat(keys).filter(k=>entities(kind).includes(k));if(!keys.length)return;
+  state.view=kind;state.only=new Set(keys);state.day='Week';state.filter='';state.showPanel=false;
   const fi=document.getElementById('filter');if(fi)fi.value='';
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===kind));
+  syncTabs();_pushNext=true;
   renderControls();renderMain();window.scrollTo(0,0);
 }
 const _gi=g=>{const x=(g||[]).find(v=>GRADES.includes(v));return x?GRADES.indexOf(x):99;};
 function _sortS(arr){return arr.slice().sort((a,b)=>_gi(a.grades)-_gi(b.grades)||a.subject.localeCompare(b.subject));}
-function nowCard(s){const g=gradeStyle(s.grades),who=s.teachers.filter(x=>x!=='TBD').join(', '),rm=s.room?(' · '+roomLabel(s.room)):'';
-  const tch=s.teachers.find(x=>x!=='TBD')||'';
-  return `<div class="nowcard" style="background:${g.bg}"${tch?` data-go-teacher="${esc(tch)}"`:''}><span class="s">${esc(s.subject)}</span><span class="m">${esc(who)}${rm}</span></div>`;}
+/* Card = the class: tapping it opens the grade(s); the teacher and room names
+   inside are their own links. */
+function nowCard(s){const g=gradeStyle(s.grades),gr=gradesOf(s);
+  const who=goTeachers(s.teachers),rm=s.room?((who?' · ':'')+goRoom(s.room)):'';
+  const tgt=gr.length?` data-go="grade" data-k="${esc(gr.join('|'))}"`:'';
+  return `<div class="nowcard" style="background:${g.bg}"${tgt}><span class="s">${esc(s.subject)}</span><span class="m">${who}${rm}</span></div>`;}
 function renderNow(st){
   st=st||(()=>{const n=nowDT();return statusFor(n.dayName,n.t);})();
   const now=new Date(),{mode,day,t}=st;
@@ -6292,8 +7042,8 @@ function renderNow(st){
     :`Nothing in session right now · <b>Up next:</b> ${day} · ${esc(meta.label)} at ${fmtT(t)}`;
   const inCards=inS.length?inS.map(nowCard).join(''):'<div class="now-empty">No classes in session right now.</div>';
   const nuCards=nuS.length?nuS.map(nowCard).join(''):'<div class="now-empty">—</div>';
-  const roomTiles=openR.map(r=>`<div class="tile r-open" data-go-room="${r}"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>';
-  const facTiles=freeFac.map(x=>`<div class="tile t-free" data-go-teacher="${esc(x)}"><span class="tl-h">${x}</span><span class="tl-s">Planning</span></div>`).join('')||'<div class="now-empty">All faculty teaching.</div>';
+  const roomTiles=openR.map(r=>`<div class="tile r-open" data-go="room" data-k="${esc(r)}"><span class="tl-h">${esc(roomLabel(r))}</span><span class="tl-s">Open</span></div>`).join('')||'<div class="now-empty">Every room in use.</div>';
+  const facTiles=freeFac.map(x=>`<div class="tile t-free" data-go="teacher" data-k="${esc(x)}"><span class="tl-h">${x}</span><span class="tl-s">Planning</span></div>`).join('')||'<div class="now-empty">All faculty teaching.</div>';
   document.getElementById('main').innerHTML=`
    <div class="now">
     <div class="now-hero"><div class="nh-clock" id="nowClock"></div><div class="nh-status">${status}</div></div>
@@ -6308,8 +7058,6 @@ function renderNow(st){
       </div>
     </div></div>`;
   const c=document.getElementById('nowClock');if(c)c.textContent=fmtClock(now);
-  document.querySelectorAll('#main [data-go-teacher]').forEach(el=>el.onclick=()=>openEntity('teacher',el.dataset.goTeacher));
-  document.querySelectorAll('#main [data-go-room]').forEach(el=>el.onclick=()=>openEntity('room',el.dataset.goRoom));
   nowKey=mode+'|'+day+'|'+t;
 }
 function nowTick(){
@@ -6322,10 +7070,57 @@ function nowTick(){
 }
 function renderMain(){
   const pc=document.getElementById('pdfColorWrap');if(pc)pc.style.display=(state.view==='now'||state.view==='find'||state.view==='compare')?'none':'flex';
-  if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.view==='compare')renderCompare();else if(state.day==='Week')renderWeek();else renderMatrix();}
+  if(state.view==='now')renderNow();else if(state.view==='find')renderFind();else if(state.view==='compare')renderCompare();else if(state.day==='Week')renderWeek();else renderMatrix();
+  writeHash();}
+function syncTabs(){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===state.view));
+  const a=document.querySelector('.tab.active');if(a&&a.scrollIntoView&&PHONE.matches)a.scrollIntoView({block:'nearest',inline:'nearest'});}
+
+/* ---------- URL hash: the phone Back button + shareable links ----------
+   Opening an entity or switching tabs pushes a history entry, so Back returns
+   to where you were instead of leaving the site; smaller changes (day, filter,
+   period picks) just rewrite the current entry. The hash is also a deep link:
+   #v=teacher&e=Kelly|Hobson&d=Mon opens exactly that view. */
+const VIEWS=['now','teacher','room','grade','find','compare'];
+let _pushNext=false,_restoring=false;
+function stateToHash(){
+  const p=new URLSearchParams();p.set('v',state.view);
+  if(state.view==='find'){p.set('d',state.find.day);if(state.find.periods.length)p.set('p',state.find.periods.join('~'));if(state.find.multi)p.set('m','1');}
+  else if(state.view==='compare')p.set('c',state.compare.map(c=>c.kind[0]+':'+c.key).join('|'));
+  else if(state.view!=='now'){p.set('d',state.day);if(state.only.size)p.set('e',[...state.only].join('|'));if(state.filter)p.set('q',state.filter);}
+  return '#'+p.toString();
+}
+function writeHash(){
+  if(_restoring){_pushNext=false;return;}
+  const h=stateToHash();
+  if(h!==location.hash){try{history[_pushNext?'pushState':'replaceState'](null,'',h);}catch(e){}}
+  _pushNext=false;
+}
+function readHash(){
+  const p=new URLSearchParams(location.hash.slice(1)),v=p.get('v');
+  state.showPanel=false;state.only=new Set();state.filter='';
+  if(!VIEWS.includes(v)){state.view='now';return;}
+  state.view=v;const d=p.get('d');
+  if(v==='find'){if(DAYS.includes(d))state.find.day=d;state.find.periods=(p.get('p')||'').split('~').filter(Boolean);state.find.multi=p.get('m')==='1';}
+  else if(v==='compare'){const K={t:'teacher',r:'room',g:'grade'};
+    const c=(p.get('c')||'').split('|').map(x=>{const i=x.indexOf(':');return{kind:K[x.slice(0,i)],key:x.slice(i+1)};}).filter(c=>c.kind&&entities(c.kind).includes(c.key));
+    if(c.length>=2)state.compare=c.slice(0,4);}
+  else if(v!=='now'){const ents=entities(v);
+    (p.get('e')||'').split('|').filter(e=>ents.includes(e)).forEach(e=>state.only.add(e));
+    state.day=(DAYS.includes(d)||d==='Week')?d:(state.only.size?'Week':DAYS[0]);state.filter=p.get('q')||'';}
+}
+function applyRoute(){
+  document.getElementById('filter').value=state.filter;syncTabs();renderControls();
+  _restoring=true;renderMain();_restoring=false;
+}
+window.addEventListener('popstate',()=>{readHash();applyRoute();});
+PHONE.addEventListener&&PHONE.addEventListener('change',()=>{if(state.view==='teacher'||state.view==='room'||state.view==='grade')renderMain();});
+document.getElementById('main').addEventListener('click',e=>{
+  const el=e.target.closest('[data-go]');if(!el)return;
+  openEntity(el.dataset.go,el.dataset.k.split('|'));
+});
 document.getElementById('tabs').onclick=e=>{const b=e.target.closest('.tab');if(!b)return;
-  state.view=b.dataset.view;state.only.clear();state.showPanel=false;
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t===b));renderControls();renderMain();};
+  state.view=b.dataset.view;state.only.clear();state.showPanel=false;_pushNext=true;
+  syncTabs();renderControls();renderMain();};
 document.getElementById('filter').oninput=e=>{state.filter=e.target.value;renderControls();renderMain();};
 document.getElementById('clearF').onclick=()=>{state.filter='';state.only.clear();syncOnlyDay();document.getElementById('filter').value='';renderControls();renderMain();};
 document.getElementById('onlyBtn').onclick=()=>{state.showPanel=!state.showPanel;renderOnlyPanel();};
@@ -6334,7 +7129,7 @@ document.getElementById('printBtn').onclick=doBrowserPrint;
 document.getElementById('pdfBtn').onclick=downloadPDF;
 document.getElementById('ver').textContent=S.version;
 
-renderControls();renderMain();
+readHash();applyRoute();
 setInterval(nowTick,1000);
 </script>
 </body>
